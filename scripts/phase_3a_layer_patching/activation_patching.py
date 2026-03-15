@@ -1,44 +1,27 @@
 #!/usr/bin/env python3
 """
-Phase 3b (Step 1 of 2): Broad Component Decomposition
-=======================================================
-Decomposes the layer-level causal mediation effects found in Phase 3a into
-attention-output vs MLP-output contributions at selected high-effect layers.
+Phase 3a: Layer-Level Activation Patching
+==========================================
+For each contrast example (Cell A wrong, Cell C correct), patches the
+residual stream from the structured run (Cell C) into the direct run
+(Cell A) one layer at a time. Measures the causal mediation effect Δℓ:
 
-For each contrast example (Cell A wrong, Cell C correct), patches individual
-component outputs (attention out, MLP out) from the structured run (Cell C)
-into the direct run (Cell A). Measures the component-level causal mediation
-effect Δℓ,c:
-
-    Δℓ,c = score(patched component c at layer ℓ) − score(baseline)
+    Δℓ = score(patched at ℓ) − score(baseline)
 
 where "score" is the logit (default) or probability for the gold answer's
 first token at the final sequence position.
 
-A large positive Δℓ,c means that component c at layer ℓ carries causally
-relevant reasoning information present in the structured run but absent
-(or weaker) in the direct run.
-
-This script performs a broad component decomposition (attention output vs
-MLP output) but does NOT resolve individual attention heads. If late-layer
-attention effects are present, a targeted head-level follow-up (Step 2)
-should be run next using head_patching.py.
-
-Noisy-condition comparison is deferred to Phase 3c.
+A large positive Δℓ means layer ℓ carries causally relevant information
+that the structured prompt provides and the direct prompt lacks.
 
 Usage:
-    python scripts/component_patching.py \
-        --contrast-file results/contrast_examples.json \
-        --output-dir results \
-        --model EleutherAI/pythia-2.8b \
-        --layers 24 25 29 30 31 \
-        --device cuda \
-        --verbose
+    python scripts/phase_3a_layer_patching/activation_patching.py
+    python scripts/phase_3a_layer_patching/activation_patching.py --verbose --device cuda
 
 Outputs:
-    results/component_patch_results.csv        – one row per (example, layer, component)
-    results/component_patch_summary.csv        – per-(layer, component) aggregated Δℓ,c
-    results/figures/component_patch_heatmap.png – thesis figure: component heatmap
+    results/phase_3a_layer_patching/layer_patch_results.csv   – one row per (example, layer)
+    results/phase_3a_layer_patching/layer_patch_summary.csv   – per-layer aggregated Δℓ
+    figures/phase_3a_layer_patching/layer_patch_curve.png      – primary thesis figure
 
 Methodological precedents:
     Wang et al. 2022 (IOI circuit), Meng et al. 2022 (ROME/causal tracing),
@@ -55,26 +38,17 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")  # non-interactive backend for headless servers
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import torch
 
 
 # ---------------------------------------------------------------------------
-# Component definitions
+# Contrast example loading and validation
 # ---------------------------------------------------------------------------
 
-# Each component is a (name, hook_template) pair.
-# hook_template uses {layer} as placeholder, resolved at runtime.
-COMPONENTS = [
-    ("attn_out", "blocks.{layer}.hook_attn_out"),
-    ("mlp_out",  "blocks.{layer}.hook_mlp_out"),
-]
+REQUIRED_KEYS = {"example_id", "domain", "gold_answer", "cell_A", "cell_C"}
+REQUIRED_CELL_KEYS = {"prompt"}
 
-
-# ---------------------------------------------------------------------------
-# Logging and VRAM utilities (same as Phase 3a)
-# ---------------------------------------------------------------------------
 
 def log(msg: str) -> None:
     """Print a message immediately."""
@@ -115,14 +89,6 @@ def reset_cuda_peak_memory_stats(device: str) -> None:
             torch.cuda.reset_peak_memory_stats()
         except Exception:
             pass
-
-
-# ---------------------------------------------------------------------------
-# Contrast example loading and validation
-# ---------------------------------------------------------------------------
-
-REQUIRED_KEYS = {"example_id", "domain", "gold_answer", "cell_A", "cell_C"}
-REQUIRED_CELL_KEYS = {"prompt"}
 
 
 def load_contrast_examples(path: str) -> list[dict]:
@@ -209,7 +175,7 @@ def load_model(model_name: str, device: str):
 
 
 # ---------------------------------------------------------------------------
-# Token-level utilities (identical to Phase 3a)
+# Token-level utilities
 # ---------------------------------------------------------------------------
 
 def get_target_token_id(model, gold_answer: str) -> tuple[int, str]:
@@ -247,7 +213,7 @@ def get_score_for_token(
 
 
 # ---------------------------------------------------------------------------
-# Structured run (Cell C) — cache component-level activations
+# Structured run (Cell C) — cache all residual stream activations
 # ---------------------------------------------------------------------------
 
 def run_structured_with_cache(
@@ -301,17 +267,13 @@ def run_direct_baseline(
 
 
 # ---------------------------------------------------------------------------
-# Hook construction — component-level patching
+# Hook construction — residual stream patching
 # ---------------------------------------------------------------------------
 
-def make_component_patch_hook(cached_activation: torch.Tensor):
+def make_resid_patch_hook(cached_activation: torch.Tensor):
     """
-    Create a TransformerLens hook function that REPLACES the component
-    output at the FINAL sequence position only.
-
-    This patches either the attention output or MLP output at one layer,
-    injecting structured-run activations into the direct-run forward pass.
-    The hook replaces only the final position to match Phase 3a methodology.
+    Create a TransformerLens hook function that REPLACES the residual
+    stream at the FINAL sequence position only.
     """
     def hook_fn(activation, hook):
         patched = activation.clone()
@@ -321,21 +283,20 @@ def make_component_patch_hook(cached_activation: torch.Tensor):
 
 
 # ---------------------------------------------------------------------------
-# Component sweep for one contrast example
+# Layer sweep for one contrast example
 # ---------------------------------------------------------------------------
 
-def run_component_sweep_for_example(
+def run_layer_sweep_for_example(
     model,
     example: dict,
-    layers: list[int],
     metric: str,
+    hook_template: str,
     device: str,
     verbose: bool,
-    component_log_interval: int = 1,
+    layer_log_interval: int = 1,
 ) -> list[dict]:
     """
-    For one contrast example, patch each component (attn_out, mlp_out)
-    at each selected layer and record the causal mediation effect.
+    For one contrast example, run the full layer-level patching sweep.
     """
     example_t0 = time.time()
 
@@ -345,13 +306,8 @@ def run_component_sweep_for_example(
     prompt_a = example["cell_A"]["prompt"]
     prompt_c = example["cell_C"]["prompt"]
 
-    n_components = len(COMPONENTS)
-    n_layers = len(layers)
-    total_patches = n_layers * n_components
-
     log(f"  [example:{ex_id}] Stage 1/5: tokenising prompts")
 
-    # ---- Stage 1: Tokenise and verify alignment ----
     token_t0 = time.time()
     tokens_a = model.tokenizer.encode(prompt_a, return_tensors="pt").to(device)
     tokens_c = model.tokenizer.encode(prompt_c, return_tensors="pt").to(device)
@@ -363,16 +319,49 @@ def run_component_sweep_for_example(
     if len_a != len_c:
         reason = f"token misalignment: Cell A={len_a}, Cell C={len_c}"
         log(f"  [example:{ex_id}] SKIP | {reason}")
-        return [_make_skip_row(ex_id, domain, gold, metric, len_a, len_c, reason)]
+        return [{
+            "example_id": ex_id,
+            "domain": domain,
+            "layer": -1,
+            "hook_name": "",
+            "metric": metric,
+            "gold_answer": gold,
+            "gold_token_id": -1,
+            "gold_token_str": "",
+            "gold_token_count": -1,
+            "direct_token_count": len_a,
+            "structured_token_count": len_c,
+            "baseline_score": float("nan"),
+            "patched_score": float("nan"),
+            "delta": float("nan"),
+            "valid_example": False,
+            "skip_reason": reason,
+        }]
 
-    # ---- Stage 2: Resolve gold token ----
     log(f"  [example:{ex_id}] Stage 2/5: resolving gold token")
     try:
         gold_token_id, gold_token_str = get_target_token_id(model, gold)
     except ValueError as e:
         reason = f"tokenisation error: {e}"
         log(f"  [example:{ex_id}] SKIP | {reason}")
-        return [_make_skip_row(ex_id, domain, gold, metric, len_a, len_c, reason)]
+        return [{
+            "example_id": ex_id,
+            "domain": domain,
+            "layer": -1,
+            "hook_name": "",
+            "metric": metric,
+            "gold_answer": gold,
+            "gold_token_id": -1,
+            "gold_token_str": "",
+            "gold_token_count": -1,
+            "direct_token_count": len_a,
+            "structured_token_count": len_c,
+            "baseline_score": float("nan"),
+            "patched_score": float("nan"),
+            "delta": float("nan"),
+            "valid_example": False,
+            "skip_reason": reason,
+        }]
 
     gold_token_count = len(model.tokenizer.encode(" " + gold, add_special_tokens=False))
     log(
@@ -380,7 +369,6 @@ def run_component_sweep_for_example(
         f"gold='{gold}' first_token='{gold_token_str}' id={gold_token_id} token_count={gold_token_count}"
     )
 
-    # ---- Stage 3: Structured cached run ----
     log(f"  [example:{ex_id}] Stage 3/5: structured cached run")
     logits_c, cache = run_structured_with_cache(
         model=model,
@@ -389,7 +377,6 @@ def run_component_sweep_for_example(
         device=device,
     )
 
-    # ---- Stage 4: Direct baseline run ----
     log(f"  [example:{ex_id}] Stage 4/5: direct baseline run")
     logits_a = run_direct_baseline(
         model=model,
@@ -406,88 +393,73 @@ def run_component_sweep_for_example(
         f"delta_structured_baseline={structured_score - baseline_score:+.6f}"
     )
 
-    # ---- Stage 5: Component sweep ----
-    log(f"  [example:{ex_id}] Stage 5/5: component sweep starting ({total_patches} patches across {n_layers} layers)")
+    log(f"  [example:{ex_id}] Stage 5/5: layer sweep starting")
+    n_layers = model.cfg.n_layers
     rows = []
-    patch_times = []
-    patch_count = 0
+    layer_times = []
 
     sweep_t0 = time.time()
 
-    for layer in layers:
-        for comp_name, hook_template in COMPONENTS:
-            patch_t0 = time.time()
-            hook_name = hook_template.format(layer=layer)
-            patch_count += 1
+    for layer in range(n_layers):
+        layer_t0 = time.time()
+        hook_name = hook_template.format(layer=layer)
 
-            should_log = (
-                verbose
-                or patch_count == 1
-                or patch_count % component_log_interval == 0
-                or patch_count == total_patches
+        if verbose or layer == 0 or (layer + 1) % layer_log_interval == 0 or layer == n_layers - 1:
+            log(
+                f"    [layer {layer:02d}/{n_layers - 1:02d}] "
+                f"hook={hook_name} | starting | {get_cuda_mem_string(device)}"
             )
 
-            if should_log:
-                log(
-                    f"    [{patch_count:02d}/{total_patches:02d}] "
-                    f"layer={layer} component={comp_name} hook={hook_name} | "
-                    f"starting | {get_cuda_mem_string(device)}"
-                )
+        cached_act = cache[hook_name]
+        hook_fn = make_resid_patch_hook(cached_act)
 
-            # Retrieve the cached activation for this component hook
-            cached_act = cache[hook_name]
-            hook_fn = make_component_patch_hook(cached_act)
+        with torch.no_grad():
+            patched_logits = model.run_with_hooks(
+                tokens_a,
+                fwd_hooks=[(hook_name, hook_fn)],
+            )
 
-            with torch.no_grad():
-                patched_logits = model.run_with_hooks(
-                    tokens_a,
-                    fwd_hooks=[(hook_name, hook_fn)],
-                )
+        patched_score = get_score_for_token(patched_logits, gold_token_id, metric)
+        delta = patched_score - baseline_score
 
-            patched_score = get_score_for_token(patched_logits, gold_token_id, metric)
-            delta = patched_score - baseline_score
+        layer_elapsed = time.time() - layer_t0
+        layer_times.append(layer_elapsed)
 
-            patch_elapsed = time.time() - patch_t0
-            patch_times.append(patch_elapsed)
+        rows.append({
+            "example_id": ex_id,
+            "domain": domain,
+            "layer": layer,
+            "hook_name": hook_name,
+            "metric": metric,
+            "gold_answer": gold,
+            "gold_token_id": gold_token_id,
+            "gold_token_str": gold_token_str,
+            "gold_token_count": gold_token_count,
+            "direct_token_count": len_a,
+            "structured_token_count": len_c,
+            "baseline_score": baseline_score,
+            "patched_score": patched_score,
+            "delta": delta,
+            "valid_example": True,
+            "skip_reason": "",
+        })
 
-            rows.append({
-                "example_id": ex_id,
-                "domain": domain,
-                "layer": layer,
-                "component": comp_name,
-                "hook_name": hook_name,
-                "metric": metric,
-                "gold_answer": gold,
-                "gold_token_id": gold_token_id,
-                "gold_token_str": gold_token_str,
-                "gold_token_count": gold_token_count,
-                "direct_token_count": len_a,
-                "structured_token_count": len_c,
-                "baseline_score": baseline_score,
-                "patched_score": patched_score,
-                "delta": delta,
-                "valid_example": True,
-                "skip_reason": "",
-            })
-
-            if should_log:
-                log(
-                    f"    [{patch_count:02d}/{total_patches:02d}] "
-                    f"layer={layer} component={comp_name} | "
-                    f"done in {format_seconds(patch_elapsed)} | "
-                    f"patched={patched_score:.6f} delta={delta:+.6f} | "
-                    f"{get_cuda_mem_string(device)}"
-                )
+        if verbose or layer == 0 or (layer + 1) % layer_log_interval == 0 or layer == n_layers - 1:
+            log(
+                f"    [layer {layer:02d}/{n_layers - 1:02d}] "
+                f"done in {format_seconds(layer_elapsed)} | "
+                f"patched={patched_score:.6f} delta={delta:+.6f} | "
+                f"{get_cuda_mem_string(device)}"
+            )
 
     sweep_elapsed = time.time() - sweep_t0
-    avg_patch_time = sum(patch_times) / len(patch_times) if patch_times else 0.0
+    avg_layer_time = sum(layer_times) / len(layer_times) if layer_times else 0.0
 
     log(
-        f"  [example:{ex_id}] Component sweep complete in {format_seconds(sweep_elapsed)} | "
-        f"avg_per_patch={format_seconds(avg_patch_time)}"
+        f"  [example:{ex_id}] Layer sweep complete in {format_seconds(sweep_elapsed)} | "
+        f"avg_per_layer={format_seconds(avg_layer_time)}"
     )
 
-    # Free memory
     del logits_c, cache, logits_a, patched_logits
 
     total_elapsed = time.time() - example_t0
@@ -495,48 +467,17 @@ def run_component_sweep_for_example(
     return rows
 
 
-def _make_skip_row(
-    ex_id: str,
-    domain: str,
-    gold: str,
-    metric: str,
-    len_a: int,
-    len_c: int,
-    reason: str,
-) -> dict:
-    """Create a single skip-row for an invalid example."""
-    return {
-        "example_id": ex_id,
-        "domain": domain,
-        "layer": -1,
-        "component": "",
-        "hook_name": "",
-        "metric": metric,
-        "gold_answer": gold,
-        "gold_token_id": -1,
-        "gold_token_str": "",
-        "gold_token_count": -1,
-        "direct_token_count": len_a,
-        "structured_token_count": len_c,
-        "baseline_score": float("nan"),
-        "patched_score": float("nan"),
-        "delta": float("nan"),
-        "valid_example": False,
-        "skip_reason": reason,
-    }
-
-
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
 
-def aggregate_component_results(
+def aggregate_layer_results(
     df: pd.DataFrame,
+    hook_template: str,
     metric: str,
 ) -> pd.DataFrame:
     """
-    Compute per-(layer, component) mean and std of Δℓ,c across all
-    valid contrast examples.
+    Compute per-layer mean and std of Δℓ across all valid contrast examples.
     """
     valid = df[df["valid_example"]].copy()
     if len(valid) == 0:
@@ -548,7 +489,7 @@ def aggregate_component_results(
 
     summary = (
         valid
-        .groupby(["layer", "component"])
+        .groupby("layer")
         .agg(
             mean_delta=("delta", "mean"),
             std_delta=("delta", "std"),
@@ -556,21 +497,11 @@ def aggregate_component_results(
         )
         .reset_index()
     )
-
-    # Add the hook_name for reference
-    hook_lookup = {name: tpl for name, tpl in COMPONENTS}
-    summary["hook_name"] = summary.apply(
-        lambda row: hook_lookup[row["component"]].format(layer=int(row["layer"])),
-        axis=1,
+    summary["hook_name"] = summary["layer"].apply(
+        lambda l: hook_template.format(layer=l)
     )
     summary["metric"] = metric
-
-    # Sort by layer then component for readability
-    summary = summary.sort_values(["layer", "component"]).reset_index(drop=True)
-    summary = summary[[
-        "layer", "component", "hook_name", "metric",
-        "mean_delta", "std_delta", "n_examples",
-    ]]
+    summary = summary[["layer", "hook_name", "metric", "mean_delta", "std_delta", "n_examples"]]
 
     elapsed = time.time() - t0
     log(f"[aggregate] Done in {format_seconds(elapsed)}")
@@ -578,82 +509,43 @@ def aggregate_component_results(
 
 
 # ---------------------------------------------------------------------------
-# Plotting — component heatmap
+# Plotting
 # ---------------------------------------------------------------------------
 
-def plot_component_heatmap(
+def plot_layer_curve(
     summary_df: pd.DataFrame,
     output_path: str,
     metric: str,
     n_examples: int,
 ):
     """
-    Plot a heatmap of mean Δℓ,c with layers on the x-axis and component
-    types on the y-axis.
+    Plot the mean Δℓ curve across layers with ±1 standard deviation band.
     """
     if summary_df.empty:
         log("[plot] WARNING: no data to plot")
         return
 
     t0 = time.time()
-    log(f"[plot] Generating component heatmap at {output_path}")
+    log(f"[plot] Generating figure at {output_path}")
 
-    # Pivot to (component × layer) matrix
-    pivot = summary_df.pivot(index="component", columns="layer", values="mean_delta")
+    layers = summary_df["layer"].values
+    means = summary_df["mean_delta"].values
+    stds = summary_df["std_delta"].fillna(0).values
 
-    # Ensure consistent component ordering: attn_out first, then mlp_out
-    comp_order = [name for name, _ in COMPONENTS if name in pivot.index]
-    pivot = pivot.reindex(comp_order)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(layers, means, marker="o", markersize=4, linewidth=1.5, color="#2c7bb6", label="Mean Δℓ")
+    ax.fill_between(layers, means - stds, means + stds, alpha=0.2, color="#2c7bb6", label="±1 std")
+    ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8)
 
-    # Sort columns (layers) numerically
-    pivot = pivot[sorted(pivot.columns)]
-
-    fig, ax = plt.subplots(figsize=(max(6, len(pivot.columns) * 1.2), 3.5))
-
-    data = pivot.values
-    layers = list(pivot.columns)
-    components = list(pivot.index)
-
-    # Colour scale: diverging, centred at 0
-    vmax = max(abs(np.nanmin(data)), abs(np.nanmax(data)))
-    vmin = -vmax if vmax > 0 else -1.0
-
-    im = ax.imshow(
-        data,
-        aspect="auto",
-        cmap="RdBu_r",
-        vmin=vmin,
-        vmax=vmax,
-    )
-
-    # Annotate cells with numeric values
-    for i in range(len(components)):
-        for j in range(len(layers)):
-            val = data[i, j]
-            if not np.isnan(val):
-                text_colour = "white" if abs(val) > 0.6 * vmax else "black"
-                ax.text(
-                    j, i, f"{val:+.2f}",
-                    ha="center", va="center",
-                    fontsize=9, fontweight="bold",
-                    color=text_colour,
-                )
-
-    ax.set_xticks(range(len(layers)))
-    ax.set_xticklabels([str(l) for l in layers], fontsize=10)
-    ax.set_yticks(range(len(components)))
-    ax.set_yticklabels(components, fontsize=10)
-    ax.set_xlabel("Layer", fontsize=11)
-    ax.set_ylabel("Component", fontsize=11)
-
-    metric_label = "logit" if metric == "logit" else "probability"
+    ax.set_xlabel("Layer", fontsize=12)
+    ylabel = "Δℓ (logit)" if metric == "logit" else "Δℓ (probability)"
+    ax.set_ylabel(ylabel, fontsize=12)
     ax.set_title(
-        f"Component-Level Causal Mediation Effect ({metric_label}, n={n_examples})",
-        fontsize=12,
+        f"Layer-Level Causal Mediation Effect (n={n_examples} contrast examples)",
+        fontsize=13,
     )
-
-    cbar = fig.colorbar(im, ax=ax, shrink=0.8)
-    cbar.set_label(f"Mean Δℓ,c ({metric_label})", fontsize=10)
+    ax.legend(fontsize=10)
+    ax.set_xticks(layers[::2] if len(layers) > 1 else layers)
 
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -670,46 +562,44 @@ def plot_component_heatmap(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Phase 3b Step 1: Broad component decomposition (attn_out vs mlp_out) at selected layers"
+        description="Phase 3a: Layer-level residual stream activation patching"
     )
-    parser.add_argument("--contrast-file", type=str, required=True,
+    parser.add_argument("--contrast-file", type=str,
+                        default="dataset/processed/contrast_examples.json",
                         help="Path to contrast_examples.json from Phase 2")
-    parser.add_argument("--output-dir", type=str, default="results",
+    parser.add_argument("--output-dir", type=str, default="results/phase_3a_layer_patching",
                         help="Directory for output CSV files")
+    parser.add_argument("--figure-dir", type=str, default="figures/phase_3a_layer_patching",
+                        help="Directory for output figure files")
     parser.add_argument("--model", type=str, default="EleutherAI/pythia-2.8b",
                         help="HuggingFace model name for HookedTransformer")
     parser.add_argument("--device", type=str, default="cuda",
                         help="Device (cuda or cpu)")
     parser.add_argument("--max-examples", type=int, default=None,
                         help="Limit to first N contrast examples (for debugging)")
-    parser.add_argument("--layers", type=int, nargs="+",
-                        default=[24, 25, 29, 30, 31],
-                        help="Layers to patch (from Phase 3a top-k selection)")
+    parser.add_argument("--hook-name", type=str,
+                        default="blocks.{layer}.hook_resid_post",
+                        help="Hook name template with {layer} placeholder")
     parser.add_argument("--metric", type=str, default="logit",
                         choices=["logit", "prob"],
                         help="Score metric: 'logit' (default) or 'prob'")
     parser.add_argument("--verbose", action="store_true",
-                        help="Print per-patch details and stage timings")
-    parser.add_argument("--component-log-interval", type=int, default=2,
-                        help="Print patch progress every N patches (default: 2)")
+                        help="Print per-example details and stage timings")
+    parser.add_argument("--layer-log-interval", type=int, default=4,
+                        help="Print layer progress every N layers (default: 4)")
     args = parser.parse_args()
 
     overall_t0 = time.time()
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    fig_dir = out_dir / "figures"
+    fig_dir = Path(args.figure_dir)
     fig_dir.mkdir(parents=True, exist_ok=True)
 
     log(f"[main] Output directory: {out_dir.resolve()}")
     log(f"[main] Figure directory: {fig_dir.resolve()}")
-    log(f"[main] Starting Phase 3b component-level activation patching")
+    log(f"[main] Starting Phase 3a activation patching pipeline")
 
-    # ---- Validate selected layers ----
-    layers = sorted(set(args.layers))
-    log(f"[main] Selected layers: {layers}")
-
-    # ---- Load contrast examples ----
     examples = load_contrast_examples(args.contrast_file)
     if args.max_examples is not None:
         examples = examples[:args.max_examples]
@@ -719,34 +609,23 @@ def main():
         log("[main] ERROR: no valid contrast examples. Exiting.")
         sys.exit(1)
 
-    # ---- Load model ----
     model = load_model(args.model, args.device)
 
-    # ---- Validate layers against model ----
-    n_model_layers = model.cfg.n_layers
-    invalid_layers = [l for l in layers if l < 0 or l >= n_model_layers]
-    if invalid_layers:
-        log(f"[main] ERROR: layers {invalid_layers} are out of range for model with {n_model_layers} layers. Exiting.")
-        sys.exit(1)
-
+    n_layers = model.cfg.n_layers
     n_examples = len(examples)
-    n_layers = len(layers)
-    n_components = len(COMPONENTS)
-    n_total = n_examples * n_layers * n_components
+    n_total = n_examples * n_layers
 
     log("\n" + "=" * 70)
-    log("Phase 3b (Step 1): Broad Component Decomposition (attn_out vs mlp_out)")
-    log(f"  examples:                {n_examples}")
-    log(f"  layers:                  {layers}")
-    log(f"  components per layer:    {n_components} ({', '.join(n for n, _ in COMPONENTS)})")
-    log(f"  patches per example:     {n_layers * n_components}")
-    log(f"  total patch runs:        {n_total}")
-    log(f"  metric:                  {args.metric}")
-    log(f"  device:                  {args.device}")
-    log(f"  component log interval:  {args.component_log_interval}")
+    log("Phase 3a: Layer-Level Activation Patching")
+    log(f"  examples:           {n_examples}")
+    log(f"  layers per example: {n_layers}")
+    log(f"  total patch runs:   {n_total}")
+    log(f"  hook:               {args.hook_name}")
+    log(f"  metric:             {args.metric}")
+    log(f"  device:             {args.device}")
+    log(f"  layer log interval: {args.layer_log_interval}")
     log("=" * 70 + "\n")
 
-    # ---- Main loop ----
     all_rows: list[dict] = []
     run_t0 = time.time()
     n_valid = 0
@@ -761,14 +640,14 @@ def main():
             f"domain={example['domain']} | {get_cuda_mem_string(args.device)}"
         )
 
-        rows = run_component_sweep_for_example(
+        rows = run_layer_sweep_for_example(
             model=model,
             example=example,
-            layers=layers,
             metric=args.metric,
+            hook_template=args.hook_name,
             device=args.device,
             verbose=args.verbose,
-            component_log_interval=max(1, args.component_log_interval),
+            layer_log_interval=max(1, args.layer_log_interval),
         )
         all_rows.extend(rows)
 
@@ -779,7 +658,6 @@ def main():
             n_skipped += 1
             example_status = "skipped"
 
-        # VRAM hygiene
         if args.device.startswith("cuda") and torch.cuda.is_available():
             torch.cuda.empty_cache()
         gc.collect()
@@ -795,61 +673,57 @@ def main():
     elapsed = time.time() - run_t0
     log(f"\n[main] Patching loop finished in {format_seconds(elapsed)} ({n_valid} valid, {n_skipped} skipped)")
 
-    # ---- Save detailed results ----
     results_df = pd.DataFrame(all_rows)
 
-    detail_path = out_dir / "component_patch_results.csv"
+    detail_path = out_dir / "layer_patch_results.csv"
     t0 = time.time()
     results_df.to_csv(detail_path, index=False, encoding="utf-8")
     log(f"[save] {detail_path} ({len(results_df)} rows) in {format_seconds(time.time() - t0)}")
 
-    # ---- Aggregate and save summary ----
-    summary_df = aggregate_component_results(results_df, args.metric)
-    summary_path = out_dir / "component_patch_summary.csv"
+    summary_df = aggregate_layer_results(results_df, args.hook_name, args.metric)
+    summary_path = out_dir / "layer_patch_summary.csv"
     t0 = time.time()
     summary_df.to_csv(summary_path, index=False, encoding="utf-8")
     log(f"[save] {summary_path} in {format_seconds(time.time() - t0)}")
 
-    # ---- Plot heatmap ----
-    fig_path = fig_dir / "component_patch_heatmap.png"
-    plot_component_heatmap(summary_df, str(fig_path), args.metric, n_valid)
+    fig_path = fig_dir / "layer_patch_curve.png"
+    plot_layer_curve(summary_df, str(fig_path), args.metric, n_valid)
 
-    # ---- Console summary ----
     log("\n" + "=" * 70)
-    log("COMPONENT-LEVEL PATCHING SUMMARY")
+    log("LAYER-LEVEL PATCHING SUMMARY")
     log("=" * 70)
     log(f"  Valid contrast examples: {n_valid}")
     log(f"  Skipped examples:        {n_skipped}")
 
     if not summary_df.empty:
-        # Show all (layer, component) pairs sorted by mean delta descending
-        sorted_summary = summary_df.sort_values("mean_delta", ascending=False)
-        log(f"\n  All (layer, component) pairs by mean Δℓ,c ({args.metric}):")
-        for _, row in sorted_summary.iterrows():
+        top_k = 5
+        top_layers = summary_df.nlargest(top_k, "mean_delta")
+        log(f"\n  Top {top_k} layers by mean Δℓ ({args.metric}):")
+        for _, row in top_layers.iterrows():
             log(
-                f"    Layer {int(row['layer']):2d} {row['component']:8s}: "
+                f"    Layer {int(row['layer']):2d}: "
                 f"mean_Δ={row['mean_delta']:+.4f} "
                 f"std={row['std_delta']:.4f} "
                 f"n={int(row['n_examples'])}"
             )
 
-        # Highlight the top component
-        top = sorted_summary.iloc[0]
-        log(
-            f"\n  Strongest component: Layer {int(top['layer'])} {top['component']} "
-            f"(mean_Δ={top['mean_delta']:+.4f})"
-        )
+        bottom_layers = summary_df.nsmallest(3, "mean_delta")
+        log(f"\n  Bottom 3 layers by mean Δℓ:")
+        for _, row in bottom_layers.iterrows():
+            log(
+                f"    Layer {int(row['layer']):2d}: "
+                f"mean_Δ={row['mean_delta']:+.4f} "
+                f"std={row['std_delta']:.4f}"
+            )
 
     total_elapsed = time.time() - overall_t0
     log("\n" + "=" * 70)
     if n_valid >= 20:
-        log("Phase 3b Step 1 (broad component decomposition) COMPLETE.")
-        log("  If late-layer attention effects are present, run head_patching.py")
-        log("  on the relevant layers (Step 2) before proceeding to Phase 3c.")
+        log("Phase 3a COMPLETE. Proceed to Phase 3b (component-level patching).")
     elif n_valid > 0:
-        log(f"Phase 3b Step 1 produced results but only {n_valid} valid examples (target: 20+).")
+        log(f"Phase 3a produced results but only {n_valid} valid examples (target: 20+).")
     else:
-        log("Phase 3b Step 1 FAILED: no valid examples. Check token alignment / tokenisation.")
+        log("Phase 3a FAILED: no valid examples. Check token alignment / tokenisation.")
     log(f"Total wall time: {format_seconds(total_elapsed)}")
     log("=" * 70)
 

@@ -28,22 +28,19 @@ setting used in Phase 3a; the default (final_token) matches the
 Phase 3a implementation shipped with this project.
 
 Usage:
-    python scripts/cross_condition_patching.py \
-        --dataset dataset/dataset.json \
-        --eval-results results/evaluation_results.csv \
-        --clean-summary results/layer_patch_summary.csv \
-        --output-dir results \
-        --model EleutherAI/pythia-2.8b \
-        --device cuda \
-        --patch-scope final_token \
-        --verbose
+    python scripts/phase_3c_cross_condition/cross_condition_patching.py
+    python scripts/phase_3c_cross_condition/cross_condition_patching.py \
+        --dataset dataset/processed/dataset.json \
+        --eval-results results/phase_2_behaviour/evaluation_results.csv \
+        --clean-summary results/phase_3a_layer_patching/layer_patch_summary.csv \
+        --device cuda --verbose
 
 Outputs:
-    results/noisy_contrast_examples.json           – noisy contrast pairs
-    results/noisy_layer_patch_results.csv           – one row per (example, layer)
-    results/noisy_layer_patch_summary.csv           – per-layer aggregated Δℓ (noisy)
-    results/cross_condition_layer_comparison.csv    – merged clean + noisy by layer
-    results/figures/clean_vs_noisy_layer_patch_overlay.png – primary RQ2 figure
+    dataset/processed/noisy_contrast_examples.json                        – noisy contrast pairs
+    results/phase_3a_layer_patching/noisy_layer_patch_results.csv         – one row per (example, layer)
+    results/phase_3a_layer_patching/noisy_layer_patch_summary.csv         – per-layer aggregated Δℓ (noisy)
+    results/phase_3c_cross_condition/cross_condition_layer_comparison.csv  – merged clean + noisy by layer
+    figures/phase_3a_layer_patching/clean_vs_noisy_layer_patch_overlay.png – primary RQ2 figure
 
 Methodological precedents:
     Wang et al. 2022 (IOI circuit), Meng et al. 2022 (ROME/causal tracing),
@@ -869,14 +866,27 @@ def main():
             "(clean vs. noisy) for RQ2"
         )
     )
-    parser.add_argument("--dataset", type=str, required=True,
+    parser.add_argument("--dataset", type=str,
+                        default="dataset/processed/dataset.json",
                         help="Path to dataset.json (full dataset with all 5 cells)")
-    parser.add_argument("--eval-results", type=str, required=True,
+    parser.add_argument("--eval-results", type=str,
+                        default="results/phase_2_behaviour/evaluation_results.csv",
                         help="Path to evaluation_results.csv from Phase 2")
-    parser.add_argument("--clean-summary", type=str, required=True,
+    parser.add_argument("--clean-summary", type=str,
+                        default="results/phase_3a_layer_patching/layer_patch_summary.csv",
                         help="Path to layer_patch_summary.csv from Phase 3a (clean A\u2192C)")
-    parser.add_argument("--output-dir", type=str, default="results",
-                        help="Directory for output CSV/JSON files")
+    parser.add_argument("--layer-output-dir", type=str,
+                        default="results/phase_3a_layer_patching",
+                        help="Directory for noisy layer patch CSV files")
+    parser.add_argument("--cross-output-dir", type=str,
+                        default="results/phase_3c_cross_condition",
+                        help="Directory for cross-condition comparison CSV")
+    parser.add_argument("--contrast-output-dir", type=str,
+                        default="dataset/processed",
+                        help="Directory for noisy_contrast_examples.json")
+    parser.add_argument("--figure-dir", type=str,
+                        default="figures/phase_3a_layer_patching",
+                        help="Directory for overlay figure output")
     parser.add_argument("--model", type=str, default="EleutherAI/pythia-2.8b",
                         help="HuggingFace model name for HookedTransformer")
     parser.add_argument("--device", type=str, default="cuda",
@@ -904,13 +914,19 @@ def main():
 
     overall_t0 = time.time()
 
-    out_dir = Path(args.output_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    fig_dir = out_dir / "figures"
+    layer_out_dir = Path(args.layer_output_dir)
+    layer_out_dir.mkdir(parents=True, exist_ok=True)
+    cross_out_dir = Path(args.cross_output_dir)
+    cross_out_dir.mkdir(parents=True, exist_ok=True)
+    contrast_out_dir = Path(args.contrast_output_dir)
+    contrast_out_dir.mkdir(parents=True, exist_ok=True)
+    fig_dir = Path(args.figure_dir)
     fig_dir.mkdir(parents=True, exist_ok=True)
 
-    log(f"[main] Output directory: {out_dir.resolve()}")
-    log(f"[main] Figure directory: {fig_dir.resolve()}")
+    log(f"[main] Layer output directory:    {layer_out_dir.resolve()}")
+    log(f"[main] Cross output directory:    {cross_out_dir.resolve()}")
+    log(f"[main] Contrast output directory: {contrast_out_dir.resolve()}")
+    log(f"[main] Figure directory:          {fig_dir.resolve()}")
     log(f"[main] Starting Phase 3c cross-condition layer-level causal mediation comparison")
     log(f"[main] patch_scope={args.patch_scope}  metric={args.metric}")
 
@@ -925,7 +941,7 @@ def main():
     contrasts = identify_noisy_contrasts(args.dataset, args.eval_results)
 
     # Save noisy contrasts for reproducibility
-    contrast_path = out_dir / "noisy_contrast_examples.json"
+    contrast_path = contrast_out_dir / "noisy_contrast_examples.json"
     with open(contrast_path, "w", encoding="utf-8") as f:
         json.dump(contrasts, f, indent=2, ensure_ascii=False)
     log(f"[save] {contrast_path} ({len(contrasts)} noisy contrasts)")
@@ -1012,13 +1028,13 @@ def main():
     # ---- Step 4: Save noisy results ----
     results_df = pd.DataFrame(all_rows)
 
-    detail_path = out_dir / "noisy_layer_patch_results.csv"
+    detail_path = layer_out_dir / "noisy_layer_patch_results.csv"
     t0 = time.time()
     results_df.to_csv(detail_path, index=False, encoding="utf-8")
     log(f"[save] {detail_path} ({len(results_df)} rows) in {format_seconds(time.time() - t0)}")
 
     noisy_summary = aggregate_layer_results(results_df, args.hook_name, args.metric)
-    noisy_summary_path = out_dir / "noisy_layer_patch_summary.csv"
+    noisy_summary_path = layer_out_dir / "noisy_layer_patch_summary.csv"
     t0 = time.time()
     noisy_summary.to_csv(noisy_summary_path, index=False, encoding="utf-8")
     log(f"[save] {noisy_summary_path} in {format_seconds(time.time() - t0)}")
@@ -1031,7 +1047,7 @@ def main():
     comparison_df = build_cross_condition_comparison(args.clean_summary, noisy_summary)
 
     if not comparison_df.empty:
-        comp_path = out_dir / "cross_condition_layer_comparison.csv"
+        comp_path = cross_out_dir / "cross_condition_layer_comparison.csv"
         t0 = time.time()
         comparison_df.to_csv(comp_path, index=False, encoding="utf-8")
         log(f"[save] {comp_path} in {format_seconds(time.time() - t0)}")

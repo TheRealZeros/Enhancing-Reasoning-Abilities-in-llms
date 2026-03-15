@@ -7,16 +7,13 @@ computes exact-match accuracy, and identifies contrast examples
 (Cell A wrong ∧ Cell C correct) for downstream activation patching.
 
 Usage:
-    python scripts/run_evaluation.py \
-        --dataset dataset/dataset.json \
-        --output-dir results \
-        --model EleutherAI/pythia-2.8b \
-        --max-new-tokens 16
+    python scripts/phase_2_behaviour/run_evaluation.py
+    python scripts/phase_2_behaviour/run_evaluation.py --max-new-tokens 16 --device cuda
 
 Outputs:
-    results/evaluation_results.csv   – one row per (example, cell)
-    results/accuracy_summary.csv     – per-cell accuracy table
-    results/contrast_examples.json   – contrast pairs for Phase 3
+    results/phase_2_behaviour/evaluation_results.csv   – one row per (example, cell)
+    results/phase_2_behaviour/accuracy_summary.csv     – per-cell accuracy table
+    dataset/processed/contrast_examples.json           – contrast pairs for Phase 3
 """
 
 import argparse
@@ -323,10 +320,12 @@ def main():
     parser = argparse.ArgumentParser(
         description="Phase 2: Behavioural evaluation of Pythia on 5-cell dataset"
     )
-    parser.add_argument("--dataset", type=str, required=True,
-                        help="Path to dataset.json")
-    parser.add_argument("--output-dir", type=str, required=True,
-                        help="Directory for output CSV/JSON files")
+    parser.add_argument("--dataset", type=str,
+                        default="dataset/processed/dataset.json",
+                        help="Path to dataset.json (default: dataset/processed/dataset.json)")
+    parser.add_argument("--output-dir", type=str,
+                        default="results/phase_2_behaviour",
+                        help="Directory for output CSV files (default: results/phase_2_behaviour)")
     parser.add_argument("--model", type=str, default="EleutherAI/pythia-2.8b",
                         help="HuggingFace model name for HookedTransformer")
     parser.add_argument("--max-new-tokens", type=int, default=16,
@@ -377,7 +376,11 @@ def main():
 
     # ---- Contrast examples ----
     contrasts = find_contrast_examples(results_df, dataset_by_id)
-    contrast_path = out_dir / "contrast_examples.json"
+    # Route contrast examples to dataset/processed/ (NOT results dir)
+    # so downstream scripts find them alongside the main dataset.
+    dataset_dir = Path(args.dataset).parent
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    contrast_path = dataset_dir / "contrast_examples.json"
     with open(contrast_path, "w", encoding="utf-8") as f:
         json.dump(contrasts, f, indent=2, ensure_ascii=False)
     print(f"[save] {contrast_path}  ({len(contrasts)} contrast examples)")

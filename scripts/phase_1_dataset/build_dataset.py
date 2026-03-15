@@ -25,9 +25,9 @@ Design decisions:
     padding, not a claim of perfect neutrality).
 
 Usage:
-  python scripts/build_dataset.py               # Build + align (REQUIRED)
-  python scripts/build_dataset.py --draft-only   # Build unaligned draft
-  python scripts/build_dataset.py --align-only   # Align existing dataset.json
+  python scripts/phase_1_dataset/build_dataset.py               # Build + align (REQUIRED)
+  python scripts/phase_1_dataset/build_dataset.py --draft-only   # Build unaligned draft
+  python scripts/phase_1_dataset/build_dataset.py --align-only   # Align existing dataset.json
 """
 
 import json
@@ -43,16 +43,18 @@ from typing import Dict, List, Optional, Tuple
 SEED = 42
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
-DATA_DIR = os.path.join(PROJECT_DIR, "dataset")
-RESULTS_DIR = os.path.join(PROJECT_DIR, "results")
-os.makedirs(DATA_DIR, exist_ok=True)
+PROJECT_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+RAW_DIR = os.path.join(PROJECT_DIR, "dataset", "raw")
+PROCESSED_DIR = os.path.join(PROJECT_DIR, "dataset", "processed")
+RESULTS_DIR = os.path.join(PROJECT_DIR, "results", "phase_1_dataset")
+os.makedirs(RAW_DIR, exist_ok=True)
+os.makedirs(PROCESSED_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-CHAINS_PATH = os.path.join(DATA_DIR, "entity_chains.json")
-DISTRACTORS_PATH = os.path.join(DATA_DIR, "distractors.json")
-OUTPUT_PATH = os.path.join(DATA_DIR, "dataset.json")
-DRAFT_PATH = os.path.join(DATA_DIR, "dataset_draft.json")
+CHAINS_PATH = os.path.join(RAW_DIR, "entity_chains.json")
+DISTRACTORS_PATH = os.path.join(RAW_DIR, "distractors.json")
+OUTPUT_PATH = os.path.join(PROCESSED_DIR, "dataset.json")
+DRAFT_PATH = os.path.join(PROCESSED_DIR, "dataset_draft.json")
 REPORT_PATH = os.path.join(RESULTS_DIR, "dataset_alignment_report.csv")
 
 # Maximum EOS-padding tokens. Cell D (structured + noisy) is naturally

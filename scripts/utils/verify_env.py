@@ -24,7 +24,7 @@ def print_header(title):
 
 def find_repo_root() -> Path:
     current = Path(__file__).resolve()
-    # verify_env.py -> setup-scripts -> setup-env -> repo root
+    # verify_env.py -> utils -> scripts -> repo root
     return current.parents[2]
 
 
@@ -86,9 +86,32 @@ def import_hooked_transformer():
 
 HookedTransformer = check("Import HookedTransformer", import_hooked_transformer)
 
-required_dirs = ["dataset", "scripts", "results", "figures", "setup-env"]
+required_dirs = [
+    "dataset", "dataset/raw", "dataset/processed",
+    "scripts", "results", "figures", "setup-env",
+]
+# Phase-specific output directories (created by scripts, checked here for completeness)
+phase_dirs = [
+    "results/phase_1_dataset",
+    "results/phase_2_behaviour",
+    "results/phase_3a_layer_patching",
+    "results/phase_3b_component_patching",
+    "results/phase_3c_cross_condition",
+    "results/phase_4_logit_lens",
+    "figures/phase_3a_layer_patching",
+    "figures/phase_3b_component_patching",
+    "figures/phase_4_logit_lens",
+]
 for d in required_dirs:
     check(f"Directory exists: {d}", lambda d=d: (repo_root / d).is_dir())
+for d in phase_dirs:
+    exists = (repo_root / d).is_dir()
+    if exists:
+        check(f"Phase dir exists: {d}", lambda d=d: True)
+    else:
+        # Phase dirs are created by scripts; note as info, not failure
+        results.append((f"Phase dir missing (OK before first run): {d}", True,
+                        "will be created by the corresponding script"))
 
 if HookedTransformer is not None and torch is not None:
     def load_model():

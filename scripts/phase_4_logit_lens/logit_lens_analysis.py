@@ -30,41 +30,38 @@ patching (Phases 3a–3c) provides the primary causal evidence.
 USAGE
 -----
   # Clean contrast only (default)
-  python scripts/logit_lens_analysis.py
+  python scripts/phase_4_logit_lens/logit_lens_analysis.py
 
   # Noisy contrast only
-  python scripts/logit_lens_analysis.py --noisy
+  python scripts/phase_4_logit_lens/logit_lens_analysis.py --noisy
 
   # Both in one run
-  python scripts/logit_lens_analysis.py --include-noisy
+  python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
 
-  # Custom paths
-  python scripts/logit_lens_analysis.py \\
-      --clean-contrast results/contrast_examples.json \\
-      --noisy-contrast results/noisy_contrast_examples.json \\
-      --dataset dataset/dataset.json \\
-      --include-noisy --outdir results/
+  # Custom paths (all args have sensible defaults — override only as needed)
+  python scripts/phase_4_logit_lens/logit_lens_analysis.py \
+      --include-noisy --max-examples 30
 
 INPUT FILES
 -----------
-  results/contrast_examples.json        — clean contrast (A wrong, C correct)
+  dataset/processed/contrast_examples.json       — clean contrast (A wrong, C correct)
       Expected keys: example_id, gold_answer, cell_A.prompt, cell_C.prompt
-  results/noisy_contrast_examples.json  — noisy contrast (B wrong, D correct)
+  dataset/processed/noisy_contrast_examples.json — noisy contrast (B wrong, D correct)
       Expected keys: example_id, gold_answer, cell_B.prompt, cell_D.prompt
       OR: example_id, gold_answer (prompts fetched from dataset.json)
-  dataset/dataset.json                  — full 200-example dataset (fallback
+  dataset/processed/dataset.json                 — full 200-example dataset (fallback
       for noisy prompts if not embedded in contrast file)
 
 OUTPUT FILES
 ------------
-  results/logit_lens_per_example_clean.csv  — per-example, per-layer (clean)
-  results/logit_lens_summary_clean.csv      — aggregated (clean)
-  results/logit_lens_per_example_noisy.csv  — per-example, per-layer (noisy)
-  results/logit_lens_summary_noisy.csv      — aggregated (noisy)
-  results/figures/logit_lens_top1_clean.png  — top-1 rate vs layer (clean)
-  results/figures/logit_lens_logit_clean.png — mean gold logit vs layer (clean)
-  results/figures/logit_lens_top1_noisy.png  — top-1 rate vs layer (noisy)
-  results/figures/logit_lens_logit_noisy.png — mean gold logit vs layer (noisy)
+  results/phase_4_logit_lens/logit_lens_per_example_clean.csv  — per-example, per-layer (clean)
+  results/phase_4_logit_lens/logit_lens_summary_clean.csv      — aggregated (clean)
+  results/phase_4_logit_lens/logit_lens_per_example_noisy.csv  — per-example, per-layer (noisy)
+  results/phase_4_logit_lens/logit_lens_summary_noisy.csv      — aggregated (noisy)
+  figures/phase_4_logit_lens/logit_lens_top1_clean.png          — top-1 rate vs layer (clean)
+  figures/phase_4_logit_lens/logit_lens_logit_clean.png         — mean gold logit vs layer (clean)
+  figures/phase_4_logit_lens/logit_lens_top1_noisy.png          — top-1 rate vs layer (noisy)
+  figures/phase_4_logit_lens/logit_lens_logit_noisy.png         — mean gold logit vs layer (noisy)
 
 Thesis terminology:
   direct prompt, structured prompt, filler control, contrast examples,
@@ -781,25 +778,25 @@ def main():
     )
     parser.add_argument(
         "--clean-contrast", type=str,
-        default="results/contrast_examples.json",
+        default="dataset/processed/contrast_examples.json",
         help="Path to clean contrast examples JSON (A wrong, C correct)"
     )
     parser.add_argument(
         "--noisy-contrast", type=str,
-        default="results/noisy_contrast_examples.json",
+        default="dataset/processed/noisy_contrast_examples.json",
         help="Path to noisy contrast examples JSON (B wrong, D correct). "
              "This must be a SEPARATE selection from clean contrast."
     )
     parser.add_argument(
-        "--dataset", type=str, default="dataset/dataset.json",
+        "--dataset", type=str, default="dataset/processed/dataset.json",
         help="Path to full dataset JSON (fallback for prompt lookup)"
     )
     parser.add_argument(
-        "--outdir", type=str, default="results",
+        "--outdir", type=str, default="results/phase_4_logit_lens",
         help="Output directory for CSV files"
     )
     parser.add_argument(
-        "--figdir", type=str, default="results/figures",
+        "--figdir", type=str, default="figures/phase_4_logit_lens",
         help="Output directory for figure PNG files"
     )
     parser.add_argument(
@@ -835,6 +832,10 @@ def main():
     # Determine which passes to run
     run_clean = not args.noisy            # default or --include-noisy
     run_noisy = args.noisy or args.include_noisy
+
+    # ---- Ensure output directories exist ----
+    Path(args.outdir).mkdir(parents=True, exist_ok=True)
+    Path(args.figdir).mkdir(parents=True, exist_ok=True)
 
     # ---- Banner ----
     log("=" * 70)

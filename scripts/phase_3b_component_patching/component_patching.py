@@ -1,45 +1,39 @@
 #!/usr/bin/env python3
 """
-Phase 3b (Step 2 of 2): Targeted Head-Level Activation Patching
-================================================================
-Drills into the attention output at selected layers by patching individual
-attention heads from the structured run (Cell C) into the direct run
-(Cell A). This follows the broad component decomposition (Step 1), which
-identified layers where the combined attention output carries a positive
-causal mediation effect.
+Phase 3b (Step 1 of 2): Broad Component Decomposition
+=======================================================
+Decomposes the layer-level causal mediation effects found in Phase 3a into
+attention-output vs MLP-output contributions at selected high-effect layers.
 
-For each contrast example and each head h at layer ℓ, the script patches
-the per-head attention result from the structured cache into the direct
-run and measures:
+For each contrast example (Cell A wrong, Cell C correct), patches individual
+component outputs (attention out, MLP out) from the structured run (Cell C)
+into the direct run (Cell A). Measures the component-level causal mediation
+effect Δℓ,c:
 
-    Δℓ,h = score(patched head h at layer ℓ) − score(baseline)
+    Δℓ,c = score(patched component c at layer ℓ) − score(baseline)
 
 where "score" is the logit (default) or probability for the gold answer's
 first token at the final sequence position.
 
-TransformerLens hook used:
-    blocks.{layer}.attn.hook_z  — shape (batch, seq, n_heads, d_head)
-    This is the per-head attention output BEFORE the output projection W_O.
-    Patching at this level is the standard approach for head-level causal
-    attribution (cf. Wang et al. 2022, IOI circuit).
+A large positive Δℓ,c means that component c at layer ℓ carries causally
+relevant reasoning information present in the structured run but absent
+(or weaker) in the direct run.
 
-The hook replaces only head h at the FINAL sequence position, matching
-the patch scope used in Phase 3a (layer-level) and Phase 3b Step 1
-(component-level).
+This script performs a broad component decomposition (attention output vs
+MLP output) but does NOT resolve individual attention heads. If late-layer
+attention effects are present, a targeted head-level follow-up (Step 2)
+should be run next using head_patching.py.
+
+Noisy-condition comparison is deferred to Phase 3c.
 
 Usage:
-    python scripts/head_patching.py \
-        --contrast-file results/contrast_examples.json \
-        --output-dir results \
-        --model EleutherAI/pythia-2.8b \
-        --layers 30 31 \
-        --device cuda \
-        --verbose
+    python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31
+    python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31 --verbose
 
 Outputs:
-    results/head_patch_results.csv         – one row per (example, layer, head)
-    results/head_patch_summary.csv         – per-(layer, head) aggregated Δℓ,h
-    results/figures/head_patch_heatmap.png  – thesis figure: head-level heatmap
+    results/phase_3b_component_patching/component_patch_results.csv  – one row per (example, layer, component)
+    results/phase_3b_component_patching/component_patch_summary.csv  – per-(layer, component) aggregated Δℓ,c
+    figures/phase_3b_component_patching/component_patch_heatmap.png   – thesis figure: component heatmap
 
 Methodological precedents:
     Wang et al. 2022 (IOI circuit), Meng et al. 2022 (ROME/causal tracing),
@@ -62,20 +56,19 @@ import torch
 
 
 # ---------------------------------------------------------------------------
-# Hook template for per-head attention result
+# Component definitions
 # ---------------------------------------------------------------------------
 
-# TransformerLens stores the per-head attention output (before the output
-# projection W_O) at this hook point. Shape: (batch, seq, n_heads, d_head).
-# This is "hook_z" in TransformerLens, NOT "hook_result" (which, if it
-# exists, is the post-W_O combined output and has shape (batch, seq, d_model)).
-# Patching hook_z is the standard approach for head-level attribution
-# (cf. Wang et al. 2022, IOI circuit).
-HEAD_HOOK_TEMPLATE = "blocks.{layer}.attn.hook_z"
+# Each component is a (name, hook_template) pair.
+# hook_template uses {layer} as placeholder, resolved at runtime.
+COMPONENTS = [
+    ("attn_out", "blocks.{layer}.hook_attn_out"),
+    ("mlp_out",  "blocks.{layer}.hook_mlp_out"),
+]
 
 
 # ---------------------------------------------------------------------------
-# Logging and VRAM utilities (shared with Phase 3a / 3b Step 1)
+# Logging and VRAM utilities (same as Phase 3a)
 # ---------------------------------------------------------------------------
 
 def log(msg: str) -> None:
@@ -211,7 +204,7 @@ def load_model(model_name: str, device: str):
 
 
 # ---------------------------------------------------------------------------
-# Token-level utilities (identical to Phase 3a / 3b Step 1)
+# Token-level utilities (identical to Phase 3a)
 # ---------------------------------------------------------------------------
 
 def get_target_token_id(model, gold_answer: str) -> tuple[int, str]:
@@ -249,7 +242,7 @@ def get_score_for_token(
 
 
 # ---------------------------------------------------------------------------
-# Structured run (Cell C) — cache activations
+# Structured run (Cell C) — cache component-level activations
 # ---------------------------------------------------------------------------
 
 def run_structured_with_cache(
@@ -303,46 +296,41 @@ def run_direct_baseline(
 
 
 # ---------------------------------------------------------------------------
-# Hook construction — single-head patching
+# Hook construction — component-level patching
 # ---------------------------------------------------------------------------
 
-def make_head_patch_hook(cached_activation: torch.Tensor, head_idx: int):
+def make_component_patch_hook(cached_activation: torch.Tensor):
     """
-    Create a TransformerLens hook function that REPLACES a single attention
-    head's output at the FINAL sequence position only.
+    Create a TransformerLens hook function that REPLACES the component
+    output at the FINAL sequence position only.
 
-    cached_activation: shape (batch, seq, n_heads, d_head) from the
-        structured run's blocks.{layer}.attn.hook_result cache entry.
-    head_idx: which head to patch (0-indexed).
-
-    The hook receives the full hook_result tensor during the direct run
-    and overwrites only [batch, final_pos, head_idx, :] with the
-    structured run's value.
+    This patches either the attention output or MLP output at one layer,
+    injecting structured-run activations into the direct-run forward pass.
+    The hook replaces only the final position to match Phase 3a methodology.
     """
     def hook_fn(activation, hook):
-        # activation shape: (batch, seq, n_heads, d_head)
         patched = activation.clone()
-        patched[:, -1, head_idx, :] = cached_activation[:, -1, head_idx, :]
+        patched[:, -1, :] = cached_activation[:, -1, :]
         return patched
     return hook_fn
 
 
 # ---------------------------------------------------------------------------
-# Head sweep for one contrast example
+# Component sweep for one contrast example
 # ---------------------------------------------------------------------------
 
-def run_head_sweep_for_example(
+def run_component_sweep_for_example(
     model,
     example: dict,
     layers: list[int],
     metric: str,
     device: str,
     verbose: bool,
-    head_log_interval: int = 4,
+    component_log_interval: int = 1,
 ) -> list[dict]:
     """
-    For one contrast example, patch each attention head at each selected
-    layer and record the causal mediation effect Δℓ,h.
+    For one contrast example, patch each component (attn_out, mlp_out)
+    at each selected layer and record the causal mediation effect.
     """
     example_t0 = time.time()
 
@@ -352,9 +340,9 @@ def run_head_sweep_for_example(
     prompt_a = example["cell_A"]["prompt"]
     prompt_c = example["cell_C"]["prompt"]
 
-    n_heads = model.cfg.n_heads
+    n_components = len(COMPONENTS)
     n_layers = len(layers)
-    total_patches = n_layers * n_heads
+    total_patches = n_layers * n_components
 
     log(f"  [example:{ex_id}] Stage 1/5: tokenising prompts")
 
@@ -405,25 +393,16 @@ def run_head_sweep_for_example(
         device=device,
     )
     baseline_score = get_score_for_token(logits_a, gold_token_id, metric)
+    structured_score = get_score_for_token(logits_c, gold_token_id, metric)
 
-    # ---- Stage 5: Head sweep ----
-    log(f"  [example:{ex_id}] Stage 5/5: head sweep starting ({total_patches} patches: {n_layers} layers × {n_heads} heads)")
+    log(
+        f"  [example:{ex_id}] Baseline vs structured | "
+        f"baseline={baseline_score:.6f} structured={structured_score:.6f} "
+        f"delta_structured_baseline={structured_score - baseline_score:+.6f}"
+    )
 
-    # Validate that the expected hook keys exist in the cache before sweeping.
-    # This catches TransformerLens version mismatches early with a clear message.
-    first_hook = HEAD_HOOK_TEMPLATE.format(layer=layers[0])
-    if first_hook not in cache.cache_dict:
-        # List available attention-related keys to help diagnose
-        attn_keys = sorted(k for k in cache.cache_dict.keys() if "attn" in k)
-        log(f"  [example:{ex_id}] ERROR: cache key '{first_hook}' not found.")
-        log(f"  Available attention-related cache keys (first 15):")
-        for k in attn_keys[:15]:
-            log(f"    {k}  shape={cache.cache_dict[k].shape}")
-        reason = f"cache key '{first_hook}' not found — check TransformerLens hook naming"
-        log(f"  [example:{ex_id}] SKIP | {reason}")
-        del logits_c, cache, logits_a
-        return [_make_skip_row(ex_id, domain, gold, metric, len_a, len_c, reason)]
-
+    # ---- Stage 5: Component sweep ----
+    log(f"  [example:{ex_id}] Stage 5/5: component sweep starting ({total_patches} patches across {n_layers} layers)")
     rows = []
     patch_times = []
     patch_count = 0
@@ -431,28 +410,28 @@ def run_head_sweep_for_example(
     sweep_t0 = time.time()
 
     for layer in layers:
-        hook_name = HEAD_HOOK_TEMPLATE.format(layer=layer)
-        cached_act = cache[hook_name]
-
-        for head in range(n_heads):
+        for comp_name, hook_template in COMPONENTS:
             patch_t0 = time.time()
+            hook_name = hook_template.format(layer=layer)
             patch_count += 1
 
             should_log = (
                 verbose
                 or patch_count == 1
-                or patch_count % head_log_interval == 0
+                or patch_count % component_log_interval == 0
                 or patch_count == total_patches
             )
 
             if should_log:
                 log(
-                    f"    [{patch_count:03d}/{total_patches:03d}] "
-                    f"layer={layer} head={head:02d} | "
+                    f"    [{patch_count:02d}/{total_patches:02d}] "
+                    f"layer={layer} component={comp_name} hook={hook_name} | "
                     f"starting | {get_cuda_mem_string(device)}"
                 )
 
-            hook_fn = make_head_patch_hook(cached_act, head)
+            # Retrieve the cached activation for this component hook
+            cached_act = cache[hook_name]
+            hook_fn = make_component_patch_hook(cached_act)
 
             with torch.no_grad():
                 patched_logits = model.run_with_hooks(
@@ -470,7 +449,7 @@ def run_head_sweep_for_example(
                 "example_id": ex_id,
                 "domain": domain,
                 "layer": layer,
-                "head": head,
+                "component": comp_name,
                 "hook_name": hook_name,
                 "metric": metric,
                 "gold_answer": gold,
@@ -488,8 +467,8 @@ def run_head_sweep_for_example(
 
             if should_log:
                 log(
-                    f"    [{patch_count:03d}/{total_patches:03d}] "
-                    f"layer={layer} head={head:02d} | "
+                    f"    [{patch_count:02d}/{total_patches:02d}] "
+                    f"layer={layer} component={comp_name} | "
                     f"done in {format_seconds(patch_elapsed)} | "
                     f"patched={patched_score:.6f} delta={delta:+.6f} | "
                     f"{get_cuda_mem_string(device)}"
@@ -499,7 +478,7 @@ def run_head_sweep_for_example(
     avg_patch_time = sum(patch_times) / len(patch_times) if patch_times else 0.0
 
     log(
-        f"  [example:{ex_id}] Head sweep complete in {format_seconds(sweep_elapsed)} | "
+        f"  [example:{ex_id}] Component sweep complete in {format_seconds(sweep_elapsed)} | "
         f"avg_per_patch={format_seconds(avg_patch_time)}"
     )
 
@@ -525,7 +504,7 @@ def _make_skip_row(
         "example_id": ex_id,
         "domain": domain,
         "layer": -1,
-        "head": -1,
+        "component": "",
         "hook_name": "",
         "metric": metric,
         "gold_answer": gold,
@@ -546,13 +525,13 @@ def _make_skip_row(
 # Aggregation
 # ---------------------------------------------------------------------------
 
-def aggregate_head_results(
+def aggregate_component_results(
     df: pd.DataFrame,
     metric: str,
 ) -> pd.DataFrame:
     """
-    Compute per-(layer, head) mean and std of Δℓ,h across all valid
-    contrast examples.
+    Compute per-(layer, component) mean and std of Δℓ,c across all
+    valid contrast examples.
     """
     valid = df[df["valid_example"]].copy()
     if len(valid) == 0:
@@ -564,7 +543,7 @@ def aggregate_head_results(
 
     summary = (
         valid
-        .groupby(["layer", "head"])
+        .groupby(["layer", "component"])
         .agg(
             mean_delta=("delta", "mean"),
             std_delta=("delta", "std"),
@@ -573,14 +552,18 @@ def aggregate_head_results(
         .reset_index()
     )
 
-    summary["hook_name"] = summary["layer"].apply(
-        lambda l: HEAD_HOOK_TEMPLATE.format(layer=int(l))
+    # Add the hook_name for reference
+    hook_lookup = {name: tpl for name, tpl in COMPONENTS}
+    summary["hook_name"] = summary.apply(
+        lambda row: hook_lookup[row["component"]].format(layer=int(row["layer"])),
+        axis=1,
     )
     summary["metric"] = metric
 
-    summary = summary.sort_values(["layer", "head"]).reset_index(drop=True)
+    # Sort by layer then component for readability
+    summary = summary.sort_values(["layer", "component"]).reset_index(drop=True)
     summary = summary[[
-        "layer", "head", "hook_name", "metric",
+        "layer", "component", "hook_name", "metric",
         "mean_delta", "std_delta", "n_examples",
     ]]
 
@@ -590,48 +573,45 @@ def aggregate_head_results(
 
 
 # ---------------------------------------------------------------------------
-# Plotting — head-level heatmap
+# Plotting — component heatmap
 # ---------------------------------------------------------------------------
 
-def plot_head_heatmap(
+def plot_component_heatmap(
     summary_df: pd.DataFrame,
     output_path: str,
     metric: str,
     n_examples: int,
 ):
     """
-    Plot a heatmap of mean Δℓ,h with heads on the x-axis and layers on
-    the y-axis.
+    Plot a heatmap of mean Δℓ,c with layers on the x-axis and component
+    types on the y-axis.
     """
     if summary_df.empty:
         log("[plot] WARNING: no data to plot")
         return
 
     t0 = time.time()
-    log(f"[plot] Generating head-level heatmap at {output_path}")
+    log(f"[plot] Generating component heatmap at {output_path}")
 
-    # Pivot to (layer × head) matrix
-    pivot = summary_df.pivot(index="layer", columns="head", values="mean_delta")
+    # Pivot to (component × layer) matrix
+    pivot = summary_df.pivot(index="component", columns="layer", values="mean_delta")
 
-    # Sort rows (layers) in ascending order
-    pivot = pivot.sort_index(ascending=True)
-    # Sort columns (heads) numerically
+    # Ensure consistent component ordering: attn_out first, then mlp_out
+    comp_order = [name for name, _ in COMPONENTS if name in pivot.index]
+    pivot = pivot.reindex(comp_order)
+
+    # Sort columns (layers) numerically
     pivot = pivot[sorted(pivot.columns)]
 
+    fig, ax = plt.subplots(figsize=(max(6, len(pivot.columns) * 1.2), 3.5))
+
     data = pivot.values
-    layers = list(pivot.index)
-    heads = list(pivot.columns)
+    layers = list(pivot.columns)
+    components = list(pivot.index)
 
-    n_rows = len(layers)
-    n_cols = len(heads)
-
-    fig, ax = plt.subplots(figsize=(max(8, n_cols * 0.55), max(3, n_rows * 1.2)))
-
-    # Diverging colour scale centred at 0
+    # Colour scale: diverging, centred at 0
     vmax = max(abs(np.nanmin(data)), abs(np.nanmax(data)))
-    if vmax == 0:
-        vmax = 1.0
-    vmin = -vmax
+    vmin = -vmax if vmax > 0 else -1.0
 
     im = ax.imshow(
         data,
@@ -641,36 +621,34 @@ def plot_head_heatmap(
         vmax=vmax,
     )
 
-    # Annotate cells with numeric values (only if reasonably few cells)
-    if n_rows * n_cols <= 128:
-        for i in range(n_rows):
-            for j in range(n_cols):
-                val = data[i, j]
-                if not np.isnan(val):
-                    text_colour = "white" if abs(val) > 0.6 * vmax else "black"
-                    fontsize = 7 if n_cols > 20 else 8
-                    ax.text(
-                        j, i, f"{val:+.2f}",
-                        ha="center", va="center",
-                        fontsize=fontsize,
-                        color=text_colour,
-                    )
+    # Annotate cells with numeric values
+    for i in range(len(components)):
+        for j in range(len(layers)):
+            val = data[i, j]
+            if not np.isnan(val):
+                text_colour = "white" if abs(val) > 0.6 * vmax else "black"
+                ax.text(
+                    j, i, f"{val:+.2f}",
+                    ha="center", va="center",
+                    fontsize=9, fontweight="bold",
+                    color=text_colour,
+                )
 
-    ax.set_xticks(range(n_cols))
-    ax.set_xticklabels([str(h) for h in heads], fontsize=8)
-    ax.set_yticks(range(n_rows))
-    ax.set_yticklabels([str(l) for l in layers], fontsize=10)
-    ax.set_xlabel("Attention Head", fontsize=11)
-    ax.set_ylabel("Layer", fontsize=11)
+    ax.set_xticks(range(len(layers)))
+    ax.set_xticklabels([str(l) for l in layers], fontsize=10)
+    ax.set_yticks(range(len(components)))
+    ax.set_yticklabels(components, fontsize=10)
+    ax.set_xlabel("Layer", fontsize=11)
+    ax.set_ylabel("Component", fontsize=11)
 
     metric_label = "logit" if metric == "logit" else "probability"
     ax.set_title(
-        f"Head-Level Causal Mediation Effect ({metric_label}, n={n_examples})",
+        f"Component-Level Causal Mediation Effect ({metric_label}, n={n_examples})",
         fontsize=12,
     )
 
     cbar = fig.colorbar(im, ax=ax, shrink=0.8)
-    cbar.set_label(f"Mean Δℓ,h ({metric_label})", fontsize=10)
+    cbar.set_label(f"Mean Δℓ,c ({metric_label})", fontsize=10)
 
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -687,12 +665,15 @@ def plot_head_heatmap(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Phase 3b Step 2: Targeted head-level activation patching at selected layers"
+        description="Phase 3b Step 1: Broad component decomposition (attn_out vs mlp_out) at selected layers"
     )
-    parser.add_argument("--contrast-file", type=str, required=True,
+    parser.add_argument("--contrast-file", type=str,
+                        default="dataset/processed/contrast_examples.json",
                         help="Path to contrast_examples.json from Phase 2")
-    parser.add_argument("--output-dir", type=str, default="results",
+    parser.add_argument("--output-dir", type=str, default="results/phase_3b_component_patching",
                         help="Directory for output CSV files")
+    parser.add_argument("--figure-dir", type=str, default="figures/phase_3b_component_patching",
+                        help="Directory for output figure files")
     parser.add_argument("--model", type=str, default="EleutherAI/pythia-2.8b",
                         help="HuggingFace model name for HookedTransformer")
     parser.add_argument("--device", type=str, default="cuda",
@@ -700,27 +681,27 @@ def main():
     parser.add_argument("--max-examples", type=int, default=None,
                         help="Limit to first N contrast examples (for debugging)")
     parser.add_argument("--layers", type=int, nargs="+",
-                        default=[30, 31],
-                        help="Layers to sweep heads at (from Phase 3b Step 1 results)")
+                        default=[24, 25, 29, 30, 31],
+                        help="Layers to patch (from Phase 3a top-k selection)")
     parser.add_argument("--metric", type=str, default="logit",
                         choices=["logit", "prob"],
                         help="Score metric: 'logit' (default) or 'prob'")
     parser.add_argument("--verbose", action="store_true",
                         help="Print per-patch details and stage timings")
-    parser.add_argument("--head-log-interval", type=int, default=8,
-                        help="Print head progress every N patches (default: 8)")
+    parser.add_argument("--component-log-interval", type=int, default=2,
+                        help="Print patch progress every N patches (default: 2)")
     args = parser.parse_args()
 
     overall_t0 = time.time()
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    fig_dir = out_dir / "figures"
+    fig_dir = Path(args.figure_dir)
     fig_dir.mkdir(parents=True, exist_ok=True)
 
     log(f"[main] Output directory: {out_dir.resolve()}")
     log(f"[main] Figure directory: {fig_dir.resolve()}")
-    log(f"[main] Starting Phase 3b Step 2: targeted head-level patching")
+    log(f"[main] Starting Phase 3b component-level activation patching")
 
     # ---- Validate selected layers ----
     layers = sorted(set(args.layers))
@@ -748,20 +729,19 @@ def main():
 
     n_examples = len(examples)
     n_layers = len(layers)
-    n_heads = model.cfg.n_heads
-    n_total = n_examples * n_layers * n_heads
+    n_components = len(COMPONENTS)
+    n_total = n_examples * n_layers * n_components
 
     log("\n" + "=" * 70)
-    log("Phase 3b (Step 2): Targeted Head-Level Activation Patching")
-    log(f"  examples:             {n_examples}")
-    log(f"  layers:               {layers}")
-    log(f"  heads per layer:      {n_heads}")
-    log(f"  patches per example:  {n_layers * n_heads}")
-    log(f"  total patch runs:     {n_total}")
-    log(f"  hook template:        {HEAD_HOOK_TEMPLATE}")
-    log(f"  metric:               {args.metric}")
-    log(f"  device:               {args.device}")
-    log(f"  head log interval:    {args.head_log_interval}")
+    log("Phase 3b (Step 1): Broad Component Decomposition (attn_out vs mlp_out)")
+    log(f"  examples:                {n_examples}")
+    log(f"  layers:                  {layers}")
+    log(f"  components per layer:    {n_components} ({', '.join(n for n, _ in COMPONENTS)})")
+    log(f"  patches per example:     {n_layers * n_components}")
+    log(f"  total patch runs:        {n_total}")
+    log(f"  metric:                  {args.metric}")
+    log(f"  device:                  {args.device}")
+    log(f"  component log interval:  {args.component_log_interval}")
     log("=" * 70 + "\n")
 
     # ---- Main loop ----
@@ -779,14 +759,14 @@ def main():
             f"domain={example['domain']} | {get_cuda_mem_string(args.device)}"
         )
 
-        rows = run_head_sweep_for_example(
+        rows = run_component_sweep_for_example(
             model=model,
             example=example,
             layers=layers,
             metric=args.metric,
             device=args.device,
             verbose=args.verbose,
-            head_log_interval=max(1, args.head_log_interval),
+            component_log_interval=max(1, args.component_log_interval),
         )
         all_rows.extend(rows)
 
@@ -816,62 +796,58 @@ def main():
     # ---- Save detailed results ----
     results_df = pd.DataFrame(all_rows)
 
-    detail_path = out_dir / "head_patch_results.csv"
+    detail_path = out_dir / "component_patch_results.csv"
     t0 = time.time()
     results_df.to_csv(detail_path, index=False, encoding="utf-8")
     log(f"[save] {detail_path} ({len(results_df)} rows) in {format_seconds(time.time() - t0)}")
 
     # ---- Aggregate and save summary ----
-    summary_df = aggregate_head_results(results_df, args.metric)
-    summary_path = out_dir / "head_patch_summary.csv"
+    summary_df = aggregate_component_results(results_df, args.metric)
+    summary_path = out_dir / "component_patch_summary.csv"
     t0 = time.time()
     summary_df.to_csv(summary_path, index=False, encoding="utf-8")
     log(f"[save] {summary_path} in {format_seconds(time.time() - t0)}")
 
     # ---- Plot heatmap ----
-    fig_path = fig_dir / "head_patch_heatmap.png"
-    plot_head_heatmap(summary_df, str(fig_path), args.metric, n_valid)
+    fig_path = fig_dir / "component_patch_heatmap.png"
+    plot_component_heatmap(summary_df, str(fig_path), args.metric, n_valid)
 
     # ---- Console summary ----
     log("\n" + "=" * 70)
-    log("HEAD-LEVEL PATCHING SUMMARY")
+    log("COMPONENT-LEVEL PATCHING SUMMARY")
     log("=" * 70)
     log(f"  Valid contrast examples: {n_valid}")
     log(f"  Skipped examples:        {n_skipped}")
 
     if not summary_df.empty:
-        # Show top-10 heads by mean delta
-        top_k = min(10, len(summary_df))
-        top_heads = summary_df.nlargest(top_k, "mean_delta")
-        log(f"\n  Top {top_k} heads by mean Δℓ,h ({args.metric}):")
-        for _, row in top_heads.iterrows():
+        # Show all (layer, component) pairs sorted by mean delta descending
+        sorted_summary = summary_df.sort_values("mean_delta", ascending=False)
+        log(f"\n  All (layer, component) pairs by mean Δℓ,c ({args.metric}):")
+        for _, row in sorted_summary.iterrows():
             log(
-                f"    Layer {int(row['layer']):2d} Head {int(row['head']):2d}: "
+                f"    Layer {int(row['layer']):2d} {row['component']:8s}: "
                 f"mean_Δ={row['mean_delta']:+.4f} "
                 f"std={row['std_delta']:.4f} "
                 f"n={int(row['n_examples'])}"
             )
 
-        # Also show bottom-3 for completeness
-        bottom_k = min(3, len(summary_df))
-        bottom_heads = summary_df.nsmallest(bottom_k, "mean_delta")
-        log(f"\n  Bottom {bottom_k} heads by mean Δℓ,h:")
-        for _, row in bottom_heads.iterrows():
-            log(
-                f"    Layer {int(row['layer']):2d} Head {int(row['head']):2d}: "
-                f"mean_Δ={row['mean_delta']:+.4f} "
-                f"std={row['std_delta']:.4f}"
-            )
+        # Highlight the top component
+        top = sorted_summary.iloc[0]
+        log(
+            f"\n  Strongest component: Layer {int(top['layer'])} {top['component']} "
+            f"(mean_Δ={top['mean_delta']:+.4f})"
+        )
 
     total_elapsed = time.time() - overall_t0
     log("\n" + "=" * 70)
     if n_valid >= 20:
-        log("Phase 3b Step 2 (head-level patching) COMPLETE.")
-        log("  Phase 3b is now fully done. Proceed to Phase 3c (cross-condition: clean vs noisy).")
+        log("Phase 3b Step 1 (broad component decomposition) COMPLETE.")
+        log("  If late-layer attention effects are present, run head_patching.py")
+        log("  on the relevant layers (Step 2) before proceeding to Phase 3c.")
     elif n_valid > 0:
-        log(f"Phase 3b Step 2 produced results but only {n_valid} valid examples (target: 20+).")
+        log(f"Phase 3b Step 1 produced results but only {n_valid} valid examples (target: 20+).")
     else:
-        log("Phase 3b Step 2 FAILED: no valid examples. Check token alignment / tokenisation.")
+        log("Phase 3b Step 1 FAILED: no valid examples. Check token alignment / tokenisation.")
     log(f"Total wall time: {format_seconds(total_elapsed)}")
     log("=" * 70)
 
