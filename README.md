@@ -6,7 +6,6 @@ Experimental code for the honours thesis:
 
 Bachelor of Engineering (Software Engineering)  
 Macquarie University  
-Supervisor: Usman Naseem
 
 ---
 
