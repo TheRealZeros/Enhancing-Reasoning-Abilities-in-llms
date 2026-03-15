@@ -63,6 +63,42 @@ import torch
 
 
 # ---------------------------------------------------------------------------
+# Prompt materialisation (shared utility — identical to build_dataset.py)
+# ---------------------------------------------------------------------------
+
+def materialise_prompt(cell_dict, tokenizer) -> str:
+    """
+    Reconstruct the exact runnable model input from the stored cell schema.
+
+    Supports both the new schema (dict with 'prompt', 'prefix_eos_pad',
+    optional 'inline_eos_filler') and legacy format (plain string).
+
+    For Cell E, inline filler is inserted before the final '\\nAnswer:'
+    suffix in the clean prompt text.
+    """
+    if isinstance(cell_dict, str):
+        return cell_dict
+
+    eos = tokenizer.eos_token
+    prompt = cell_dict["prompt"]
+    prefix_pad = cell_dict.get("prefix_eos_pad", 0)
+    inline_filler = cell_dict.get("inline_eos_filler", 0)
+
+    if inline_filler > 0:
+        marker = "\nAnswer:"
+        idx = prompt.rfind(marker)
+        if idx != -1:
+            prompt = prompt[:idx] + (eos * inline_filler) + prompt[idx:]
+        else:
+            prompt = prompt + (eos * inline_filler)
+
+    if prefix_pad > 0:
+        prompt = (eos * prefix_pad) + prompt
+
+    return prompt
+
+
+# ---------------------------------------------------------------------------
 # Logging utilities (identical to Phase 3a)
 # ---------------------------------------------------------------------------
 
@@ -290,24 +326,33 @@ def identify_noisy_contrasts(
                 continue
             # Extract prompts robustly (supports str or dict-with-prompt)
             try:
-                prompt_b = validate_and_extract_prompt(ex["cells"]["B"], "B", eid)
-                prompt_d = validate_and_extract_prompt(ex["cells"]["D"], "D", eid)
+                validate_and_extract_prompt(ex["cells"]["B"], "B", eid)
+                validate_and_extract_prompt(ex["cells"]["D"], "D", eid)
             except ValueError as e:
                 log(f"[contrast] WARNING: skipping {eid}: {e}")
                 continue
+
+            # Store the clean cell schema (dict with prompt + metadata),
+            # NOT the materialised prompt with EOS padding.
+            cell_b_data = ex["cells"]["B"]
+            cell_d_data = ex["cells"]["D"]
+            if isinstance(cell_b_data, str):
+                cell_b_data = {"prompt": cell_b_data, "prefix_eos_pad": 0}
+            if isinstance(cell_d_data, str):
+                cell_d_data = {"prompt": cell_d_data, "prefix_eos_pad": 0}
 
             contrasts.append({
                 "example_id": str(eid),
                 "domain": ex["domain"],
                 "gold_answer": ex["answer"],
                 "cell_B": {
-                    "prompt": prompt_b,
+                    **cell_b_data,
                     "generated_answer_raw": str(b_row["generated_answer_raw"]),
                     "generated_answer_normalised": str(b_row["generated_answer_normalised"]),
                     "correct": False,
                 },
                 "cell_D": {
-                    "prompt": prompt_d,
+                    **cell_d_data,
                     "generated_answer_raw": str(d_row["generated_answer_raw"]),
                     "generated_answer_normalised": str(d_row["generated_answer_normalised"]),
                     "correct": True,
@@ -512,8 +557,8 @@ def run_layer_sweep_for_example(
     ex_id = example["example_id"]
     domain = example["domain"]
     gold = example["gold_answer"]
-    prompt_b = example["cell_B"]["prompt"]
-    prompt_d = example["cell_D"]["prompt"]
+    prompt_b = materialise_prompt(example["cell_B"], model.tokenizer)
+    prompt_d = materialise_prompt(example["cell_D"], model.tokenizer)
 
     # --- Stage 1: Tokenise ---
     log(f"  [example:{ex_id}] Stage 1/5: tokenising prompts (B and D)")

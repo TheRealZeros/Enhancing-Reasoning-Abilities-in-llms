@@ -84,6 +84,42 @@ import numpy as np
 import torch
 
 # ============================================================================
+# Prompt materialisation (shared utility — identical to build_dataset.py)
+# ============================================================================
+
+def materialise_prompt(cell_dict, tokenizer) -> str:
+    """
+    Reconstruct the exact runnable model input from the stored cell schema.
+
+    Supports both the new schema (dict with 'prompt', 'prefix_eos_pad',
+    optional 'inline_eos_filler') and legacy format (plain string).
+
+    For Cell E, inline filler is inserted before the final '\\nAnswer:'
+    suffix in the clean prompt text.
+    """
+    if isinstance(cell_dict, str):
+        return cell_dict
+
+    eos = tokenizer.eos_token
+    prompt = cell_dict["prompt"]
+    prefix_pad = cell_dict.get("prefix_eos_pad", 0)
+    inline_filler = cell_dict.get("inline_eos_filler", 0)
+
+    if inline_filler > 0:
+        marker = "\nAnswer:"
+        idx = prompt.rfind(marker)
+        if idx != -1:
+            prompt = prompt[:idx] + (eos * inline_filler) + prompt[idx:]
+        else:
+            prompt = prompt + (eos * inline_filler)
+
+    if prefix_pad > 0:
+        prompt = (eos * prefix_pad) + prompt
+
+    return prompt
+
+
+# ============================================================================
 # Logging
 # ============================================================================
 
@@ -177,17 +213,37 @@ def resolve_prompts(
     cell_baseline: str,
     cell_structured: str,
     dataset_index: dict | None,
+    tokenizer=None,
 ) -> list:
     """
     For each contrast example, extract the two prompts needed for logit
     lens analysis.  First tries embedded cell dicts (e.g. cell_A.prompt),
     then falls back to dataset.json cells if available.
 
+    If tokenizer is provided, cell dicts are materialised via
+    materialise_prompt() to reconstruct the full runnable prompt
+    (including EOS alignment padding).  If tokenizer is None, falls back
+    to extracting the 'prompt' key directly (legacy behaviour).
+
     Returns list of dicts: {example_id, gold_answer, prompt_baseline, prompt_structured}
     Skips examples where prompts can't be resolved.
     """
     cell_bl_key = f"cell_{cell_baseline}"   # e.g. "cell_A" or "cell_B"
     cell_st_key = f"cell_{cell_structured}"  # e.g. "cell_C" or "cell_D"
+
+    def _extract(cell_value):
+        """Extract a runnable prompt string from a cell value."""
+        if cell_value is None:
+            return None
+        if tokenizer is not None:
+            return materialise_prompt(cell_value, tokenizer)
+        # Legacy fallback: extract 'prompt' key from dict, or use string directly
+        if isinstance(cell_value, str):
+            return cell_value if cell_value else None
+        if isinstance(cell_value, dict):
+            p = cell_value.get("prompt")
+            return p if (isinstance(p, str) and p) else None
+        return None
 
     resolved = []
     for ex in examples:
@@ -198,19 +254,19 @@ def resolve_prompts(
         prompt_st = None
 
         # Try embedded cell dicts first
-        if cell_bl_key in ex and isinstance(ex[cell_bl_key], dict):
-            prompt_bl = ex[cell_bl_key].get("prompt")
-        if cell_st_key in ex and isinstance(ex[cell_st_key], dict):
-            prompt_st = ex[cell_st_key].get("prompt")
+        if cell_bl_key in ex:
+            prompt_bl = _extract(ex[cell_bl_key])
+        if cell_st_key in ex:
+            prompt_st = _extract(ex[cell_st_key])
 
         # Fallback to dataset.json
         if (prompt_bl is None or prompt_st is None) and dataset_index is not None:
             ds = dataset_index.get(eid)
             if ds and "cells" in ds:
                 if prompt_bl is None:
-                    prompt_bl = ds["cells"].get(cell_baseline)
+                    prompt_bl = _extract(ds["cells"].get(cell_baseline))
                 if prompt_st is None:
-                    prompt_st = ds["cells"].get(cell_structured)
+                    prompt_st = _extract(ds["cells"].get(cell_structured))
 
         if not prompt_bl:
             log(f"  WARN: {eid} — no prompt for Cell {cell_baseline}, skipping")
@@ -671,7 +727,8 @@ def run_pass(
     tag = "clean" if cell_baseline == "A" else "noisy"
 
     # Resolve prompts for each example
-    resolved = resolve_prompts(examples, cell_baseline, cell_structured, dataset_index)
+    resolved = resolve_prompts(examples, cell_baseline, cell_structured, dataset_index,
+                               tokenizer=model.tokenizer)
     if max_examples is not None:
         resolved = resolved[:max_examples]
 

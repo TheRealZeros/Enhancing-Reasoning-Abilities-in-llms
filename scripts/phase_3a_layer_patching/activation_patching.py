@@ -43,6 +43,42 @@ import torch
 
 
 # ---------------------------------------------------------------------------
+# Prompt materialisation (shared utility — identical to build_dataset.py)
+# ---------------------------------------------------------------------------
+
+def materialise_prompt(cell_dict, tokenizer) -> str:
+    """
+    Reconstruct the exact runnable model input from the stored cell schema.
+
+    Supports both the new schema (dict with 'prompt', 'prefix_eos_pad',
+    optional 'inline_eos_filler') and legacy format (plain string).
+
+    For Cell E, inline filler is inserted before the final '\\nAnswer:'
+    suffix in the clean prompt text.
+    """
+    if isinstance(cell_dict, str):
+        return cell_dict
+
+    eos = tokenizer.eos_token
+    prompt = cell_dict["prompt"]
+    prefix_pad = cell_dict.get("prefix_eos_pad", 0)
+    inline_filler = cell_dict.get("inline_eos_filler", 0)
+
+    if inline_filler > 0:
+        marker = "\nAnswer:"
+        idx = prompt.rfind(marker)
+        if idx != -1:
+            prompt = prompt[:idx] + (eos * inline_filler) + prompt[idx:]
+        else:
+            prompt = prompt + (eos * inline_filler)
+
+    if prefix_pad > 0:
+        prompt = (eos * prefix_pad) + prompt
+
+    return prompt
+
+
+# ---------------------------------------------------------------------------
 # Contrast example loading and validation
 # ---------------------------------------------------------------------------
 
@@ -303,8 +339,10 @@ def run_layer_sweep_for_example(
     ex_id = example["example_id"]
     domain = example["domain"]
     gold = example["gold_answer"]
-    prompt_a = example["cell_A"]["prompt"]
-    prompt_c = example["cell_C"]["prompt"]
+
+    # Materialise prompts from the stored cell schema
+    prompt_a = materialise_prompt(example["cell_A"], model.tokenizer)
+    prompt_c = materialise_prompt(example["cell_C"], model.tokenizer)
 
     log(f"  [example:{ex_id}] Stage 1/5: tokenising prompts")
 

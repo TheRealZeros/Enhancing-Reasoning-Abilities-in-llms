@@ -71,15 +71,22 @@ def main():
 
             data = dataset[ex_id]
 
+            # Store the clean cell schema (dict with prompt + metadata),
+            # NOT the materialised prompt with EOS padding.
+            cell_b_data = data["cells"]["B"]
+            cell_d_data = data["cells"]["D"]
+
+            # Ensure cell data is a dict (handle legacy string format)
+            if isinstance(cell_b_data, str):
+                cell_b_data = {"prompt": cell_b_data, "prefix_eos_pad": 0}
+            if isinstance(cell_d_data, str):
+                cell_d_data = {"prompt": cell_d_data, "prefix_eos_pad": 0}
+
             noisy_contrast.append({
                 "example_id": ex_id,
                 "gold_answer": data["answer"],
-                "cell_B": {
-                    "prompt": data["cells"]["B"]
-                },
-                "cell_D": {
-                    "prompt": data["cells"]["D"]
-                }
+                "cell_B": cell_b_data,
+                "cell_D": cell_d_data,
             })
 
     print(f"Found {len(noisy_contrast)} noisy contrast examples")

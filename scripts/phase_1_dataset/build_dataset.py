@@ -24,6 +24,15 @@ Design decisions:
     carries minimal semantic content for a base language model (low-signal
     padding, not a claim of perfect neutrality).
 
+Storage format:
+  Each cell is stored as a dict with:
+    - "prompt": clean human-readable prompt text (no EOS padding visible)
+    - "prefix_eos_pad": int — number of EOS tokens to prepend at runtime
+    - "inline_eos_filler": int — (Cell E only) number of EOS tokens to insert
+      before the final "Answer:" suffix at runtime
+  Use materialise_prompt(cell_dict, tokenizer) to reconstruct the exact
+  runnable model input from this schema.
+
 Usage:
   python scripts/phase_1_dataset/build_dataset.py               # Build + align (REQUIRED)
   python scripts/phase_1_dataset/build_dataset.py --draft-only   # Build unaligned draft
@@ -77,6 +86,60 @@ def load_tokenizer():
 
 def count_tokens(tokenizer, text: str) -> int:
     return len(tokenizer.encode(text, add_special_tokens=False))
+
+
+# ---------------------------------------------------------------------------
+# Prompt materialisation (shared utility)
+# ---------------------------------------------------------------------------
+
+def materialise_prompt(cell_dict, tokenizer) -> str:
+    """
+    Reconstruct the exact runnable model input from the stored cell schema.
+
+    Supports both the new schema (dict with 'prompt', 'prefix_eos_pad',
+    optional 'inline_eos_filler') and legacy format (plain string).
+
+    For Cell E, inline filler is inserted before the final '\\nAnswer:'
+    suffix in the clean prompt text. This exactly reproduces the original
+    aligned prompt that was previously stored with literal EOS tokens.
+
+    Parameters
+    ----------
+    cell_dict : dict or str
+        If dict: must have 'prompt' (str) and 'prefix_eos_pad' (int).
+                 May have 'inline_eos_filler' (int, Cell E only).
+        If str: returned as-is (legacy compatibility).
+    tokenizer : transformers.PreTrainedTokenizer
+        Used to obtain the EOS token string.
+
+    Returns
+    -------
+    str : The exact prompt string to feed to the model.
+    """
+    # Legacy support: if cell is already a plain string, return as-is
+    if isinstance(cell_dict, str):
+        return cell_dict
+
+    eos = tokenizer.eos_token
+    prompt = cell_dict["prompt"]
+    prefix_pad = cell_dict.get("prefix_eos_pad", 0)
+    inline_filler = cell_dict.get("inline_eos_filler", 0)
+
+    # Insert inline EOS filler for Cell E (before the final "\nAnswer:" suffix)
+    if inline_filler > 0:
+        marker = "\nAnswer:"
+        idx = prompt.rfind(marker)
+        if idx != -1:
+            prompt = prompt[:idx] + (eos * inline_filler) + prompt[idx:]
+        else:
+            # Fallback: append filler at the end
+            prompt = prompt + (eos * inline_filler)
+
+    # Prepend EOS alignment padding
+    if prefix_pad > 0:
+        prompt = (eos * prefix_pad) + prompt
+
+    return prompt
 
 
 # ---------------------------------------------------------------------------
@@ -184,19 +247,47 @@ def build_cell_D(example: dict, distractors: List[str]) -> str:
     return f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test}"
 
 
-def build_cell_E(example: dict, tokenizer, target_tokens: int = None) -> str:
-    """Cell E — Filler Control.
+def build_cell_E_clean(example: dict) -> str:
+    """Cell E — Filler Control (clean prompt text WITHOUT inline EOS filler).
 
     Uses the STRUCTURED few-shot demos (to match Cell C length context)
-    but replaces the Step 1/Step 2 reasoning lines with EOS-token padding.
-    This ensures Cell E has similar length to C but carries zero reasoning
-    signal — the padding is semantically null.
+    but does NOT include Step 1/Step 2 reasoning lines. The gap between
+    this prompt and Cell C is filled at runtime using inline_eos_filler
+    metadata.
 
-    If tokenizer is available and target_tokens is set, pads to exact count.
-    Otherwise, uses a fixed block of EOS tokens as approximate filler.
+    The clean prompt text ends with "\\nAnswer:" — the inline filler
+    will be inserted before this suffix during materialisation.
     """
-    # The base of Cell E: same facts, same question, same ending as C,
-    # but NO step-by-step reasoning. We'll fill the gap with EOS padding.
+    test_base = (
+        f"Fact 1: {example['fact_1']}\n"
+        f"Fact 2: {example['fact_2']}\n\n"
+        f"Q: {example['question']}\n"
+    )
+    test_suffix = "Answer:"
+    return f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test_base}{test_suffix}"
+
+
+def compute_cell_E_filler(example: dict, tokenizer) -> int:
+    """
+    Compute how many EOS tokens Cell E needs as inline filler to match
+    Cell C's token count (before cross-cell alignment padding).
+
+    Returns the number of inline EOS tokens needed (may be 0).
+    """
+    eos = tokenizer.eos_token
+    cell_c_text = build_cell_C(example)
+    cell_c_tokens = count_tokens(tokenizer, cell_c_text)
+
+    cell_e_clean = build_cell_E_clean(example)
+    cell_e_tokens = count_tokens(tokenizer, cell_e_clean)
+
+    filler_needed = cell_c_tokens - cell_e_tokens
+    if filler_needed <= 0:
+        return 0
+
+    # Iteratively find exact filler count.
+    # We reconstruct the full string with filler to check the actual token
+    # count, since tokeniser boundary effects may cause slight deviations.
     test_base = (
         f"Fact 1: {example['fact_1']}\n"
         f"Fact 2: {example['fact_2']}\n\n"
@@ -204,39 +295,21 @@ def build_cell_E(example: dict, tokenizer, target_tokens: int = None) -> str:
     )
     test_suffix = "Answer:"
 
-    if tokenizer is not None:
-        # Compute how many EOS tokens we need to fill the gap between
-        # this base+suffix and the Cell C equivalent.
-        eos = tokenizer.eos_token
-        cell_c_text = build_cell_C(example)
-        cell_c_tokens = count_tokens(tokenizer, cell_c_text)
-        base_text = f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test_base}{test_suffix}"
-        base_tokens = count_tokens(tokenizer, base_text)
-        filler_needed = cell_c_tokens - base_tokens
+    current_n = filler_needed
+    for _ in range(30):
+        candidate = (
+            f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n"
+            f"{test_base}{eos * current_n}\n{test_suffix}"
+        )
+        actual = count_tokens(tokenizer, candidate)
+        if actual == cell_c_tokens:
+            return current_n
+        diff = cell_c_tokens - actual
+        current_n += diff
+        if current_n < 0:
+            current_n = 0
 
-        if filler_needed > 0:
-            filler = eos * filler_needed
-            candidate = f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test_base}{filler}\n{test_suffix}"
-            # Verify and correct
-            actual = count_tokens(tokenizer, candidate)
-            for _ in range(30):
-                if actual == cell_c_tokens:
-                    break
-                diff = cell_c_tokens - actual
-                if diff > 0:
-                    filler = filler + eos * diff
-                elif diff < 0:
-                    filler = filler[:len(eos) * (filler_needed + diff)]
-                candidate = f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test_base}{filler}\n{test_suffix}"
-                actual = count_tokens(tokenizer, candidate)
-            return candidate
-        else:
-            return f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test_base}{test_suffix}"
-    else:
-        # Offline fallback: use a fixed EOS block as approximate filler.
-        # This will be re-aligned when the real tokeniser is available.
-        eos_approx = "<|endoftext|>" * 30  # rough estimate
-        return f"{STRUCTURED_DEMO_1}\n\n{STRUCTURED_DEMO_2}\n\n{test_base}{eos_approx}\n{test_suffix}"
+    return max(0, current_n)
 
 
 # ---------------------------------------------------------------------------
@@ -244,58 +317,80 @@ def build_cell_E(example: dict, tokenizer, target_tokens: int = None) -> str:
 # ---------------------------------------------------------------------------
 
 def align_cells(
-    cells: Dict[str, str],
+    cells: Dict[str, dict],
     tokenizer,
     max_pad: int = MAX_PAD_TOKENS,
-) -> Optional[Dict[str, str]]:
-    """Pad all cells to identical token count using EOS-token prefix.
+) -> Optional[Dict[str, dict]]:
+    """Compute prefix EOS padding needed to align all cells to identical token count.
 
     GPT-NeoX tokeniser encodes '<|endoftext|>' as token ID 0 (single token).
     Prepending N copies adds exactly N tokens.
 
+    Updates the 'prefix_eos_pad' field in each cell dict.
     Returns aligned cells dict, or None if alignment fails.
     """
     eos = tokenizer.eos_token
-    counts = {k: count_tokens(tokenizer, v) for k, v in cells.items()}
+
+    # Materialise each cell to get its current token count (with inline filler
+    # for Cell E, but before prefix padding). Reset prefix_eos_pad to 0 first
+    # to get the base count.
+    base_cells = {}
+    counts = {}
+    for key, cell in cells.items():
+        base = dict(cell)
+        base["prefix_eos_pad"] = 0  # reset so we measure the base
+        base_cells[key] = base
+        materialised = materialise_prompt(base, tokenizer)
+        counts[key] = count_tokens(tokenizer, materialised)
+
     target = max(counts.values())
 
     if target - min(counts.values()) > max_pad:
         return None
 
     aligned = {}
-    for key, text in cells.items():
+    for key, cell in base_cells.items():
         gap = target - counts[key]
+        cell_copy = dict(cell)
+
         if gap == 0:
-            aligned[key] = text
+            cell_copy["prefix_eos_pad"] = 0
+            aligned[key] = cell_copy
             continue
 
-        # Prepend EOS tokens
-        candidate = (eos * gap) + text
-        actual = count_tokens(tokenizer, candidate)
+        # Compute prefix pad needed
+        candidate_pad = gap
+        base_prompt = materialise_prompt(cell, tokenizer)  # with inline filler, no prefix
 
-        # Iterative correction
         for _ in range(50):
+            candidate_text = (eos * candidate_pad) + base_prompt
+            actual = count_tokens(tokenizer, candidate_text)
             if actual == target:
                 break
             diff = target - actual
-            if diff > 0:
-                candidate = (eos * diff) + candidate
-            elif diff < 0:
-                trim = min(-diff, gap)
-                candidate = candidate[len(eos) * trim:]
-            actual = count_tokens(tokenizer, candidate)
+            candidate_pad += diff
+            if candidate_pad < 0:
+                candidate_pad = 0
         else:
-            if actual != target:
+            if count_tokens(tokenizer, (eos * candidate_pad) + base_prompt) != target:
                 return None
 
-        if actual != target:
+        final_text = (eos * candidate_pad) + base_prompt
+        if count_tokens(tokenizer, final_text) != target:
             return None
-        aligned[key] = candidate
 
-    # Final verification
-    final = {k: count_tokens(tokenizer, v) for k, v in aligned.items()}
-    if len(set(final.values())) != 1:
+        cell_copy["prefix_eos_pad"] = candidate_pad
+        aligned[key] = cell_copy
+
+    # Final verification: all cells must produce the same token count
+    final_counts = {}
+    for key, cell in aligned.items():
+        materialised = materialise_prompt(cell, tokenizer)
+        final_counts[key] = count_tokens(tokenizer, materialised)
+
+    if len(set(final_counts.values())) != 1:
         return None
+
     return aligned
 
 
@@ -327,15 +422,11 @@ def sample_safe_distractors(
     answer_lower = answer.lower().strip()
     bridge_lower = bridge_entity.lower().strip()
 
-    # Pre-filter the pool to only safe candidates
     safe_pool = []
     for fact in pool:
         fl = fact.lower()
-        # Check answer substring (skip very short answers to avoid
-        # false positives on common words like "one", "green")
         if len(answer_lower) > 2 and answer_lower in fl:
             continue
-        # Check bridge entity substring
         if len(bridge_lower) > 2 and bridge_lower in fl:
             continue
         safe_pool.append(fact)
@@ -357,7 +448,7 @@ def sample_safe_distractors(
 def build_dataset(tokenizer=None) -> List[dict]:
     """Build all prompt cells for every example.
 
-    If tokenizer is provided, Cell E uses it for precise EOS padding.
+    If tokenizer is provided, Cell E uses it for precise EOS filler computation.
     Distractors are sampled ONCE per example and shared between B and D.
     """
     print("Loading entity chains...")
@@ -375,18 +466,22 @@ def build_dataset(tokenizer=None) -> List[dict]:
     for ex in chains:
         pool = get_cross_domain_pool(ex["domain"], all_distractors)
 
-        # Sample distractors ONCE — shared between Cell B and Cell D.
-        # Integrity check: distractors must not contain the answer or bridge entity.
         shared_distractors = sample_safe_distractors(
             pool, ex["answer"], ex["bridge_entity"], n=3,
         )
 
+        if tokenizer is not None:
+            inline_filler = compute_cell_E_filler(ex, tokenizer)
+        else:
+            inline_filler = 30
+
         cells = {
-            "A": build_cell_A(ex),
-            "B": build_cell_B(ex, shared_distractors),
-            "C": build_cell_C(ex),
-            "D": build_cell_D(ex, shared_distractors),
-            "E": build_cell_E(ex, tokenizer),
+            "A": {"prompt": build_cell_A(ex), "prefix_eos_pad": 0},
+            "B": {"prompt": build_cell_B(ex, shared_distractors), "prefix_eos_pad": 0},
+            "C": {"prompt": build_cell_C(ex), "prefix_eos_pad": 0},
+            "D": {"prompt": build_cell_D(ex, shared_distractors), "prefix_eos_pad": 0},
+            "E": {"prompt": build_cell_E_clean(ex), "prefix_eos_pad": 0,
+                  "inline_eos_filler": inline_filler},
         }
         dataset.append({
             "id": ex["id"],
@@ -412,7 +507,11 @@ def perform_alignment(dataset: List[dict], tokenizer) -> List[dict]:
 
     for entry in dataset:
         cells = entry["cells"]
-        counts_raw = {k: count_tokens(tokenizer, v) for k, v in cells.items()}
+
+        counts_raw = {}
+        for k, cell in cells.items():
+            materialised = materialise_prompt(cell, tokenizer)
+            counts_raw[k] = count_tokens(tokenizer, materialised)
 
         result = align_cells(cells, tokenizer)
         if result is None:
@@ -424,7 +523,10 @@ def perform_alignment(dataset: List[dict], tokenizer) -> List[dict]:
             })
             continue
 
-        counts_final = {k: count_tokens(tokenizer, v) for k, v in result.items()}
+        counts_final = {}
+        for k, cell in result.items():
+            materialised = materialise_prompt(cell, tokenizer)
+            counts_final[k] = count_tokens(tokenizer, materialised)
         tok_count = list(counts_final.values())[0]
 
         entry["cells"] = result
@@ -438,7 +540,6 @@ def perform_alignment(dataset: List[dict], tokenizer) -> List[dict]:
             "aligned": True,
         })
 
-    # Save report
     fieldnames = ["example_id"] + [f"token_count_{k}" for k in "ABCDE"] + ["aligned"]
     with open(REPORT_PATH, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -451,7 +552,7 @@ def perform_alignment(dataset: List[dict], tokenizer) -> List[dict]:
 
 
 def main():
-    random.seed(SEED)  # Deterministic generation for thesis reproducibility
+    random.seed(SEED)
 
     draft_only = "--draft-only" in sys.argv
     align_only = "--align-only" in sys.argv
@@ -460,9 +561,6 @@ def main():
         print("ERROR: Cannot use --draft-only and --align-only together.")
         sys.exit(1)
 
-    # ----------------------------------------------------------------
-    # MODE 1: --draft-only  (no tokeniser needed, saves unaligned draft)
-    # ----------------------------------------------------------------
     if draft_only:
         print("=== DRAFT MODE (no alignment, not for patching) ===\n")
         dataset = build_dataset(tokenizer=None)
@@ -474,9 +572,6 @@ def main():
         print("         the aligned dataset required for activation patching.")
         return
 
-    # ----------------------------------------------------------------
-    # Load tokeniser (REQUIRED for default and --align-only modes)
-    # ----------------------------------------------------------------
     print("Loading Pythia-2.8B tokeniser...")
     try:
         tokenizer = load_tokenizer()
@@ -488,24 +583,15 @@ def main():
         print("\nOr use --draft-only for unaligned inspection drafts.")
         sys.exit(1)
 
-    # ----------------------------------------------------------------
-    # MODE 2: --align-only  (load existing dataset, align it)
-    # ----------------------------------------------------------------
     if align_only:
         print(f"\nLoading existing dataset from {OUTPUT_PATH}...")
         with open(OUTPUT_PATH) as f:
             dataset = json.load(f)
         print(f"  Loaded {len(dataset)} examples.")
     else:
-        # ----------------------------------------------------------------
-        # MODE 3: Default  (build + align)
-        # ----------------------------------------------------------------
         print()
         dataset = build_dataset(tokenizer=tokenizer)
 
-    # ----------------------------------------------------------------
-    # Perform alignment
-    # ----------------------------------------------------------------
     total_before = len(dataset)
     print("\nPerforming token alignment...")
     dataset = perform_alignment(dataset, tokenizer)
@@ -516,15 +602,9 @@ def main():
         print("\nFATAL: Zero examples survived alignment. Check prompts.")
         sys.exit(1)
 
-    # ----------------------------------------------------------------
-    # Save final aligned dataset
-    # ----------------------------------------------------------------
     with open(OUTPUT_PATH, "w") as f:
         json.dump(dataset, f, indent=2)
 
-    # ----------------------------------------------------------------
-    # Sanity print (Constraint 6)
-    # ----------------------------------------------------------------
     toks = [d["token_count"] for d in dataset]
     success_rate = total_after / total_before * 100 if total_before > 0 else 0
 

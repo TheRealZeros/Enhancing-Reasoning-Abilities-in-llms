@@ -30,6 +30,42 @@ import pandas as pd
 import torch
 
 # ---------------------------------------------------------------------------
+# Prompt materialisation (shared utility — identical to build_dataset.py)
+# ---------------------------------------------------------------------------
+
+def materialise_prompt(cell_dict, tokenizer) -> str:
+    """
+    Reconstruct the exact runnable model input from the stored cell schema.
+
+    Supports both the new schema (dict with 'prompt', 'prefix_eos_pad',
+    optional 'inline_eos_filler') and legacy format (plain string).
+
+    For Cell E, inline filler is inserted before the final '\\nAnswer:'
+    suffix in the clean prompt text.
+    """
+    if isinstance(cell_dict, str):
+        return cell_dict
+
+    eos = tokenizer.eos_token
+    prompt = cell_dict["prompt"]
+    prefix_pad = cell_dict.get("prefix_eos_pad", 0)
+    inline_filler = cell_dict.get("inline_eos_filler", 0)
+
+    if inline_filler > 0:
+        marker = "\nAnswer:"
+        idx = prompt.rfind(marker)
+        if idx != -1:
+            prompt = prompt[:idx] + (eos * inline_filler) + prompt[idx:]
+        else:
+            prompt = prompt + (eos * inline_filler)
+
+    if prefix_pad > 0:
+        prompt = (eos * prefix_pad) + prompt
+
+    return prompt
+
+
+# ---------------------------------------------------------------------------
 # Dataset loading
 # ---------------------------------------------------------------------------
 
@@ -196,7 +232,9 @@ def evaluate_dataset(
         gold = ex["answer"]
 
         for cell in CELL_NAMES:
-            prompt = ex["cells"][cell]
+            cell_data = ex["cells"][cell]
+            # Materialise the prompt from the stored schema
+            prompt = materialise_prompt(cell_data, model.tokenizer)
             try:
                 raw, in_tok, out_tok = generate_answer(
                     model, prompt, max_new_tokens, device
@@ -276,7 +314,7 @@ def find_contrast_examples(
 ) -> list[dict]:
     """
     Contrast examples: same example where Cell A is wrong AND Cell C is correct.
-    Returns a list of dicts with full prompt/answer info for both cells.
+    Returns a list of dicts with the cell schema (prompt + metadata) for both cells.
     """
     # Pivot to one row per example
     cell_a = df[df["cell"] == "A"].set_index("example_id")
@@ -290,18 +328,29 @@ def find_contrast_examples(
         c_row = cell_c.loc[eid]
         if (not a_row["correct"]) and c_row["correct"]:
             ex = dataset_by_id[eid]
+            # Store the clean cell schema (dict with prompt + metadata),
+            # NOT the materialised prompt with EOS padding.
+            cell_a_data = ex["cells"]["A"]
+            cell_c_data = ex["cells"]["C"]
+
+            # Ensure cell data is a dict (handle legacy string format)
+            if isinstance(cell_a_data, str):
+                cell_a_data = {"prompt": cell_a_data, "prefix_eos_pad": 0}
+            if isinstance(cell_c_data, str):
+                cell_c_data = {"prompt": cell_c_data, "prefix_eos_pad": 0}
+
             contrasts.append({
                 "example_id": eid,
                 "domain": ex["domain"],
                 "gold_answer": ex["answer"],
                 "cell_A": {
-                    "prompt": ex["cells"]["A"],
+                    **cell_a_data,
                     "generated_answer_raw": a_row["generated_answer_raw"],
                     "generated_answer_normalised": a_row["generated_answer_normalised"],
                     "correct": False,
                 },
                 "cell_C": {
-                    "prompt": ex["cells"]["C"],
+                    **cell_c_data,
                     "generated_answer_raw": c_row["generated_answer_raw"],
                     "generated_answer_normalised": c_row["generated_answer_normalised"],
                     "correct": True,
