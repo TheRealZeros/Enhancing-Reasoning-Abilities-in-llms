@@ -1,0 +1,1802 @@
+[
+  {
+    "id": "geo_001",
+    "domain": "geography",
+    "fact_1": "Paris is the capital of France.",
+    "fact_2": "France is located in Europe.",
+    "question": "The city of Paris is located on what continent?",
+    "answer": "Europe",
+    "bridge_entity": "France"
+  },
+  {
+    "id": "geo_002",
+    "domain": "geography",
+    "fact_1": "Tokyo is the capital of Japan.",
+    "fact_2": "Japan is located in Asia.",
+    "question": "The city of Tokyo is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "geo_003",
+    "domain": "geography",
+    "fact_1": "Canberra is the capital of Australia.",
+    "fact_2": "Australia uses the Australian dollar as its currency.",
+    "question": "Canberra is the capital of a country that uses what currency?",
+    "answer": "the Australian dollar",
+    "bridge_entity": "Australia"
+  },
+  {
+    "id": "geo_004",
+    "domain": "geography",
+    "fact_1": "Ottawa is the capital of Canada.",
+    "fact_2": "Canada is located in North America.",
+    "question": "The city of Ottawa is located on what continent?",
+    "answer": "North America",
+    "bridge_entity": "Canada"
+  },
+  {
+    "id": "geo_005",
+    "domain": "geography",
+    "fact_1": "Berlin is the capital of Germany.",
+    "fact_2": "Germany is the most populous country in the European Union.",
+    "question": "Berlin is the capital of the most populous country in what union?",
+    "answer": "the European Union",
+    "bridge_entity": "Germany"
+  },
+  {
+    "id": "geo_006",
+    "domain": "geography",
+    "fact_1": "Brasilia is the capital of Brazil.",
+    "fact_2": "Brazil is located in South America.",
+    "question": "The city of Brasilia is located on what continent?",
+    "answer": "South America",
+    "bridge_entity": "Brazil"
+  },
+  {
+    "id": "geo_007",
+    "domain": "geography",
+    "fact_1": "Cairo is the capital of Egypt.",
+    "fact_2": "Egypt is located in Africa.",
+    "question": "The city of Cairo is located on what continent?",
+    "answer": "Africa",
+    "bridge_entity": "Egypt"
+  },
+  {
+    "id": "geo_008",
+    "domain": "geography",
+    "fact_1": "Beijing is the capital of China.",
+    "fact_2": "China is located in Asia.",
+    "question": "The city of Beijing is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "China"
+  },
+  {
+    "id": "geo_009",
+    "domain": "geography",
+    "fact_1": "Moscow is the capital of Russia.",
+    "fact_2": "Russia has the largest land area of any country.",
+    "question": "Moscow is the capital of a country with what distinction?",
+    "answer": "largest land area",
+    "bridge_entity": "Russia"
+  },
+  {
+    "id": "geo_010",
+    "domain": "geography",
+    "fact_1": "Lima is the capital of Peru.",
+    "fact_2": "Peru borders the Pacific Ocean.",
+    "question": "Lima is the capital of a country that borders what ocean?",
+    "answer": "the Pacific Ocean",
+    "bridge_entity": "Peru"
+  },
+  {
+    "id": "geo_011",
+    "domain": "geography",
+    "fact_1": "Madrid is the capital of Spain.",
+    "fact_2": "Spain is located in Europe.",
+    "question": "The city of Madrid is located on what continent?",
+    "answer": "Europe",
+    "bridge_entity": "Spain"
+  },
+  {
+    "id": "geo_012",
+    "domain": "geography",
+    "fact_1": "Rome is the capital of Italy.",
+    "fact_2": "Italy uses the euro as its currency.",
+    "question": "Rome is the capital of a country that uses what currency?",
+    "answer": "the euro",
+    "bridge_entity": "Italy"
+  },
+  {
+    "id": "geo_013",
+    "domain": "geography",
+    "fact_1": "Nairobi is the capital of Kenya.",
+    "fact_2": "Kenya is located in Africa.",
+    "question": "The city of Nairobi is located on what continent?",
+    "answer": "Africa",
+    "bridge_entity": "Kenya"
+  },
+  {
+    "id": "geo_014",
+    "domain": "geography",
+    "fact_1": "Buenos Aires is the capital of Argentina.",
+    "fact_2": "Argentina is located in South America.",
+    "question": "Buenos Aires is located on what continent?",
+    "answer": "South America",
+    "bridge_entity": "Argentina"
+  },
+  {
+    "id": "geo_015",
+    "domain": "geography",
+    "fact_1": "Bangkok is the capital of Thailand.",
+    "fact_2": "Thailand is located in Asia.",
+    "question": "The city of Bangkok is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Thailand"
+  },
+  {
+    "id": "geo_016",
+    "domain": "geography",
+    "fact_1": "London is the capital of England.",
+    "fact_2": "England is part of the United Kingdom.",
+    "question": "London is the capital of a country that is part of what?",
+    "answer": "the United Kingdom",
+    "bridge_entity": "England"
+  },
+  {
+    "id": "geo_017",
+    "domain": "geography",
+    "fact_1": "Warsaw is the capital of Poland.",
+    "fact_2": "Poland joined the European Union in 2004.",
+    "question": "Warsaw is the capital of a country that joined the EU in what year?",
+    "answer": "2004",
+    "bridge_entity": "Poland"
+  },
+  {
+    "id": "geo_018",
+    "domain": "geography",
+    "fact_1": "Athens is the capital of Greece.",
+    "fact_2": "Greece has a coastline along the Mediterranean Sea.",
+    "question": "Athens is the capital of a country with a coastline along what sea?",
+    "answer": "the Mediterranean Sea",
+    "bridge_entity": "Greece"
+  },
+  {
+    "id": "geo_019",
+    "domain": "geography",
+    "fact_1": "Hanoi is the capital of Vietnam.",
+    "fact_2": "Vietnam is located in Asia.",
+    "question": "The city of Hanoi is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Vietnam"
+  },
+  {
+    "id": "geo_020",
+    "domain": "geography",
+    "fact_1": "Lisbon is the capital of Portugal.",
+    "fact_2": "Portugal borders the Atlantic Ocean.",
+    "question": "Lisbon is the capital of a country bordering what ocean?",
+    "answer": "the Atlantic Ocean",
+    "bridge_entity": "Portugal"
+  },
+  {
+    "id": "geo_021",
+    "domain": "geography",
+    "fact_1": "Stockholm is the capital of Sweden.",
+    "fact_2": "Sweden uses the Swedish krona as its currency.",
+    "question": "Stockholm is the capital of a country that uses what currency?",
+    "answer": "the Swedish krona",
+    "bridge_entity": "Sweden"
+  },
+  {
+    "id": "geo_022",
+    "domain": "geography",
+    "fact_1": "Santiago is the capital of Chile.",
+    "fact_2": "Chile is located in South America.",
+    "question": "The city of Santiago is located on what continent?",
+    "answer": "South America",
+    "bridge_entity": "Chile"
+  },
+  {
+    "id": "geo_023",
+    "domain": "geography",
+    "fact_1": "Seoul is the capital of South Korea.",
+    "fact_2": "South Korea is located in Asia.",
+    "question": "The city of Seoul is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "South Korea"
+  },
+  {
+    "id": "geo_024",
+    "domain": "geography",
+    "fact_1": "Dublin is the capital of Ireland.",
+    "fact_2": "Ireland is an island in the North Atlantic.",
+    "question": "Dublin is the capital of an island in what ocean?",
+    "answer": "the North Atlantic",
+    "bridge_entity": "Ireland"
+  },
+  {
+    "id": "geo_025",
+    "domain": "geography",
+    "fact_1": "Ankara is the capital of Turkey.",
+    "fact_2": "Turkey is a member of NATO.",
+    "question": "Ankara is the capital of a country that is a member of what alliance?",
+    "answer": "NATO",
+    "bridge_entity": "Turkey"
+  },
+  {
+    "id": "geo_026",
+    "domain": "geography",
+    "fact_1": "The Nile River flows through Egypt.",
+    "fact_2": "Egypt is located in Africa.",
+    "question": "The Nile River flows through a country on what continent?",
+    "answer": "Africa",
+    "bridge_entity": "Egypt"
+  },
+  {
+    "id": "geo_027",
+    "domain": "geography",
+    "fact_1": "The Thames River flows through London.",
+    "fact_2": "London is located in England.",
+    "question": "The Thames River flows through a city in what country?",
+    "answer": "England",
+    "bridge_entity": "London"
+  },
+  {
+    "id": "geo_028",
+    "domain": "geography",
+    "fact_1": "Mount Fuji is located in Japan.",
+    "fact_2": "Japan is an island country in Asia.",
+    "question": "Mount Fuji is in an island country on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "geo_029",
+    "domain": "geography",
+    "fact_1": "The Great Barrier Reef is in Australia.",
+    "fact_2": "Australia is surrounded by the Pacific Ocean.",
+    "question": "The Great Barrier Reef is in a country surrounded by what ocean?",
+    "answer": "the Pacific Ocean",
+    "bridge_entity": "Australia"
+  },
+  {
+    "id": "geo_030",
+    "domain": "geography",
+    "fact_1": "The Amazon River flows through Brazil.",
+    "fact_2": "Brazil borders the Atlantic Ocean.",
+    "question": "The Amazon River flows through a country bordering what ocean?",
+    "answer": "the Atlantic Ocean",
+    "bridge_entity": "Brazil"
+  },
+  {
+    "id": "geo_031",
+    "domain": "geography",
+    "fact_1": "Oslo is the capital of Norway.",
+    "fact_2": "Norway has the longest coastline in Europe.",
+    "question": "Oslo is the capital of a country with the longest coastline in what region?",
+    "answer": "Europe",
+    "bridge_entity": "Norway"
+  },
+  {
+    "id": "geo_032",
+    "domain": "geography",
+    "fact_1": "Helsinki is the capital of Finland.",
+    "fact_2": "Finland shares a border with Russia.",
+    "question": "Helsinki is the capital of a country that shares a border with what country?",
+    "answer": "Russia",
+    "bridge_entity": "Finland"
+  },
+  {
+    "id": "geo_033",
+    "domain": "geography",
+    "fact_1": "Vienna is the capital of Austria.",
+    "fact_2": "Austria is a landlocked country.",
+    "question": "Vienna is the capital of a country that is described as what type?",
+    "answer": "landlocked",
+    "bridge_entity": "Austria"
+  },
+  {
+    "id": "geo_034",
+    "domain": "geography",
+    "fact_1": "Copenhagen is the capital of Denmark.",
+    "fact_2": "Denmark is part of Scandinavia.",
+    "question": "Copenhagen is the capital of a country that is part of what region?",
+    "answer": "Scandinavia",
+    "bridge_entity": "Denmark"
+  },
+  {
+    "id": "geo_035",
+    "domain": "geography",
+    "fact_1": "New Delhi is the capital of India.",
+    "fact_2": "India is located in Asia.",
+    "question": "The city of New Delhi is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "India"
+  },
+  {
+    "id": "geo_036",
+    "domain": "geography",
+    "fact_1": "Jakarta is the capital of Indonesia.",
+    "fact_2": "Indonesia is the largest archipelago in the world.",
+    "question": "Jakarta is the capital of the largest what in the world?",
+    "answer": "archipelago",
+    "bridge_entity": "Indonesia"
+  },
+  {
+    "id": "geo_037",
+    "domain": "geography",
+    "fact_1": "Bogota is the capital of Colombia.",
+    "fact_2": "Colombia is located in South America.",
+    "question": "The city of Bogota is located on what continent?",
+    "answer": "South America",
+    "bridge_entity": "Colombia"
+  },
+  {
+    "id": "geo_038",
+    "domain": "geography",
+    "fact_1": "Pretoria is the capital of South Africa.",
+    "fact_2": "South Africa has three official capital cities.",
+    "question": "Pretoria is a capital of a country with how many official capitals?",
+    "answer": "three",
+    "bridge_entity": "South Africa"
+  },
+  {
+    "id": "geo_039",
+    "domain": "geography",
+    "fact_1": "Manila is the capital of the Philippines.",
+    "fact_2": "The Philippines is located in Asia.",
+    "question": "The city of Manila is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "the Philippines"
+  },
+  {
+    "id": "geo_040",
+    "domain": "geography",
+    "fact_1": "Havana is the capital of Cuba.",
+    "fact_2": "Cuba is the largest island in the Caribbean.",
+    "question": "Havana is the capital of the largest island in what region?",
+    "answer": "the Caribbean",
+    "bridge_entity": "Cuba"
+  },
+  {
+    "id": "geo_041",
+    "domain": "geography",
+    "fact_1": "Kuala Lumpur is the capital of Malaysia.",
+    "fact_2": "Malaysia is located in Asia.",
+    "question": "Kuala Lumpur is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Malaysia"
+  },
+  {
+    "id": "geo_042",
+    "domain": "geography",
+    "fact_1": "Accra is the capital of Ghana.",
+    "fact_2": "Ghana gained independence in 1957.",
+    "question": "Accra is the capital of a country that gained independence in what year?",
+    "answer": "1957",
+    "bridge_entity": "Ghana"
+  },
+  {
+    "id": "geo_043",
+    "domain": "geography",
+    "fact_1": "Quito is the capital of Ecuador.",
+    "fact_2": "Ecuador is located in South America.",
+    "question": "The city of Quito is located on what continent?",
+    "answer": "South America",
+    "bridge_entity": "Ecuador"
+  },
+  {
+    "id": "geo_044",
+    "domain": "geography",
+    "fact_1": "Reykjavik is the capital of Iceland.",
+    "fact_2": "Iceland is powered mainly by geothermal energy.",
+    "question": "Reykjavik is the capital of a country powered mainly by what energy source?",
+    "answer": "geothermal energy",
+    "bridge_entity": "Iceland"
+  },
+  {
+    "id": "geo_045",
+    "domain": "geography",
+    "fact_1": "Kathmandu is the capital of Nepal.",
+    "fact_2": "Nepal is located in Asia.",
+    "question": "The city of Kathmandu is on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Nepal"
+  },
+  {
+    "id": "geo_046",
+    "domain": "geography",
+    "fact_1": "Islamabad is the capital of Pakistan.",
+    "fact_2": "Pakistan has a population of over 230 million.",
+    "question": "Islamabad is the capital of a country with a population of over how many?",
+    "answer": "230 million",
+    "bridge_entity": "Pakistan"
+  },
+  {
+    "id": "geo_047",
+    "domain": "geography",
+    "fact_1": "Addis Ababa is the capital of Ethiopia.",
+    "fact_2": "Ethiopia is located in Africa.",
+    "question": "Addis Ababa is located on what continent?",
+    "answer": "Africa",
+    "bridge_entity": "Ethiopia"
+  },
+  {
+    "id": "geo_048",
+    "domain": "geography",
+    "fact_1": "Caracas is the capital of Venezuela.",
+    "fact_2": "Venezuela has the largest proven oil reserves in the world.",
+    "question": "Caracas is the capital of a country with the largest reserves of what?",
+    "answer": "oil",
+    "bridge_entity": "Venezuela"
+  },
+  {
+    "id": "geo_049",
+    "domain": "geography",
+    "fact_1": "Rabat is the capital of Morocco.",
+    "fact_2": "Morocco is located in Africa.",
+    "question": "The city of Rabat is located on what continent?",
+    "answer": "Africa",
+    "bridge_entity": "Morocco"
+  },
+  {
+    "id": "geo_050",
+    "domain": "geography",
+    "fact_1": "Phnom Penh is the capital of Cambodia.",
+    "fact_2": "Cambodia is located in Asia.",
+    "question": "Phnom Penh is located on what continent?",
+    "answer": "Asia",
+    "bridge_entity": "Cambodia"
+  },
+  {
+    "id": "sci_001",
+    "domain": "science",
+    "fact_1": "Water is composed of hydrogen and oxygen.",
+    "fact_2": "Oxygen is a chemical element with atomic number 8.",
+    "question": "Water contains an element with what atomic number?",
+    "answer": "8",
+    "bridge_entity": "oxygen"
+  },
+  {
+    "id": "sci_002",
+    "domain": "science",
+    "fact_1": "Table salt is made of sodium and chlorine.",
+    "fact_2": "Sodium is a chemical element with atomic number 11.",
+    "question": "Table salt contains an element with what atomic number?",
+    "answer": "11",
+    "bridge_entity": "sodium"
+  },
+  {
+    "id": "sci_003",
+    "domain": "science",
+    "fact_1": "Rust is composed of iron oxide.",
+    "fact_2": "Iron oxide has a reddish brown color.",
+    "question": "Rust has what color?",
+    "answer": "reddish brown",
+    "bridge_entity": "iron oxide"
+  },
+  {
+    "id": "sci_004",
+    "domain": "science",
+    "fact_1": "The Sun is a star in the Milky Way.",
+    "fact_2": "The Milky Way is a spiral galaxy.",
+    "question": "The Sun is in what type of galaxy?",
+    "answer": "spiral",
+    "bridge_entity": "the Milky Way"
+  },
+  {
+    "id": "sci_005",
+    "domain": "science",
+    "fact_1": "Earth orbits the Sun.",
+    "fact_2": "The Sun is classified as a yellow dwarf star.",
+    "question": "Earth orbits what type of star?",
+    "answer": "yellow dwarf",
+    "bridge_entity": "the Sun"
+  },
+  {
+    "id": "sci_006",
+    "domain": "science",
+    "fact_1": "Lightning is caused by static electricity.",
+    "fact_2": "Static electricity is a buildup of electric charge.",
+    "question": "Lightning is caused by a buildup of what?",
+    "answer": "electric charge",
+    "bridge_entity": "static electricity"
+  },
+  {
+    "id": "sci_007",
+    "domain": "science",
+    "fact_1": "Diamonds are made of carbon.",
+    "fact_2": "Carbon has the atomic number 6.",
+    "question": "Diamonds are made of an element with what atomic number?",
+    "answer": "6",
+    "bridge_entity": "carbon"
+  },
+  {
+    "id": "sci_008",
+    "domain": "science",
+    "fact_1": "Bronze is an alloy of copper and tin.",
+    "fact_2": "Copper has the atomic number 29.",
+    "question": "Bronze contains an element with what atomic number?",
+    "answer": "29",
+    "bridge_entity": "copper"
+  },
+  {
+    "id": "sci_009",
+    "domain": "science",
+    "fact_1": "The Moon orbits the Earth.",
+    "fact_2": "The Earth has a diameter of about 12742 kilometers.",
+    "question": "The Moon orbits a planet with what diameter?",
+    "answer": "12742 kilometers",
+    "bridge_entity": "the Earth"
+  },
+  {
+    "id": "sci_010",
+    "domain": "science",
+    "fact_1": "Sound travels through air.",
+    "fact_2": "Air is composed mainly of nitrogen.",
+    "question": "Sound travels through a medium composed mainly of what element?",
+    "answer": "nitrogen",
+    "bridge_entity": "air"
+  },
+  {
+    "id": "sci_011",
+    "domain": "science",
+    "fact_1": "Photosynthesis requires sunlight.",
+    "fact_2": "Sunlight takes about 8 minutes to reach Earth.",
+    "question": "Photosynthesis requires energy that takes how long to reach Earth?",
+    "answer": "8 minutes",
+    "bridge_entity": "sunlight"
+  },
+  {
+    "id": "sci_012",
+    "domain": "science",
+    "fact_1": "Steel is an alloy containing iron.",
+    "fact_2": "Iron is a chemical element with symbol Fe.",
+    "question": "Steel contains an element with what chemical symbol?",
+    "answer": "Fe",
+    "bridge_entity": "iron"
+  },
+  {
+    "id": "sci_013",
+    "domain": "science",
+    "fact_1": "Mars has a thin atmosphere.",
+    "fact_2": "The atmosphere of Mars is mostly carbon dioxide.",
+    "question": "The atmosphere of Mars is mostly composed of what?",
+    "answer": "carbon dioxide",
+    "bridge_entity": "the atmosphere of Mars"
+  },
+  {
+    "id": "sci_014",
+    "domain": "science",
+    "fact_1": "Glass is made primarily from silica.",
+    "fact_2": "Silica has the chemical formula SiO2.",
+    "question": "Glass is made from a substance with what chemical formula?",
+    "answer": "SiO2",
+    "bridge_entity": "silica"
+  },
+  {
+    "id": "sci_015",
+    "domain": "science",
+    "fact_1": "Batteries produce electricity through chemical reactions.",
+    "fact_2": "Chemical reactions involve the rearrangement of atoms.",
+    "question": "Batteries produce electricity through the rearrangement of what?",
+    "answer": "atoms",
+    "bridge_entity": "chemical reactions"
+  },
+  {
+    "id": "sci_016",
+    "domain": "science",
+    "fact_1": "The ozone layer protects Earth from ultraviolet radiation.",
+    "fact_2": "Ultraviolet radiation has a wavelength shorter than visible light.",
+    "question": "The ozone layer blocks radiation with wavelength shorter than what?",
+    "answer": "visible light",
+    "bridge_entity": "ultraviolet radiation"
+  },
+  {
+    "id": "sci_017",
+    "domain": "science",
+    "fact_1": "Magnets attract iron.",
+    "fact_2": "Iron has a melting point of 1538 degrees Celsius.",
+    "question": "Magnets attract a metal with what melting point?",
+    "answer": "1538 degrees Celsius",
+    "bridge_entity": "iron"
+  },
+  {
+    "id": "sci_018",
+    "domain": "science",
+    "fact_1": "Helium is used in balloons.",
+    "fact_2": "Helium is the second lightest element.",
+    "question": "Balloons use what rank lightest element?",
+    "answer": "second",
+    "bridge_entity": "helium"
+  },
+  {
+    "id": "sci_019",
+    "domain": "science",
+    "fact_1": "Pluto orbits the Sun.",
+    "fact_2": "The Sun contains about 99.86 percent of the solar system mass.",
+    "question": "Pluto orbits an object that contains what percentage of solar system mass?",
+    "answer": "99.86 percent",
+    "bridge_entity": "the Sun"
+  },
+  {
+    "id": "sci_020",
+    "domain": "science",
+    "fact_1": "Mercury is the closest planet to the Sun.",
+    "fact_2": "The Sun has a surface temperature of about 5500 degrees Celsius.",
+    "question": "The closest planet orbits a star with what surface temperature?",
+    "answer": "5500 degrees Celsius",
+    "bridge_entity": "the Sun"
+  },
+  {
+    "id": "sci_021",
+    "domain": "science",
+    "fact_1": "Clouds are made of water droplets.",
+    "fact_2": "Water droplets form through condensation.",
+    "question": "Clouds are made through what process?",
+    "answer": "condensation",
+    "bridge_entity": "water droplets"
+  },
+  {
+    "id": "sci_022",
+    "domain": "science",
+    "fact_1": "Acid rain is caused by sulfur dioxide.",
+    "fact_2": "Sulfur dioxide is produced by burning fossil fuels.",
+    "question": "Acid rain is caused by a gas produced by burning what?",
+    "answer": "fossil fuels",
+    "bridge_entity": "sulfur dioxide"
+  },
+  {
+    "id": "sci_023",
+    "domain": "science",
+    "fact_1": "Earthquakes occur along fault lines.",
+    "fact_2": "Fault lines are cracks in the Earth crust.",
+    "question": "Earthquakes occur along cracks in what?",
+    "answer": "the Earth crust",
+    "bridge_entity": "fault lines"
+  },
+  {
+    "id": "sci_024",
+    "domain": "science",
+    "fact_1": "Rainbows are caused by refraction of light.",
+    "fact_2": "Refraction is the bending of light as it passes through different media.",
+    "question": "Rainbows are caused by the bending of what?",
+    "answer": "light",
+    "bridge_entity": "refraction"
+  },
+  {
+    "id": "sci_025",
+    "domain": "science",
+    "fact_1": "Saturn has prominent rings.",
+    "fact_2": "The rings of Saturn are made mostly of ice particles.",
+    "question": "The rings of Saturn are made mostly of what?",
+    "answer": "ice particles",
+    "bridge_entity": "the rings of Saturn"
+  },
+  {
+    "id": "sci_026",
+    "domain": "science",
+    "fact_1": "Gravity pulls objects toward Earth.",
+    "fact_2": "The Earth has one natural satellite.",
+    "question": "Gravity pulls objects toward a planet with how many natural satellites?",
+    "answer": "one",
+    "bridge_entity": "the Earth"
+  },
+  {
+    "id": "sci_027",
+    "domain": "science",
+    "fact_1": "Brass is an alloy of copper and zinc.",
+    "fact_2": "Zinc has the atomic number 30.",
+    "question": "Brass contains an element with what atomic number?",
+    "answer": "30",
+    "bridge_entity": "zinc"
+  },
+  {
+    "id": "sci_028",
+    "domain": "science",
+    "fact_1": "Dry ice is solid carbon dioxide.",
+    "fact_2": "Carbon dioxide has the chemical formula CO2.",
+    "question": "Dry ice is the solid form of what chemical formula?",
+    "answer": "CO2",
+    "bridge_entity": "carbon dioxide"
+  },
+  {
+    "id": "sci_029",
+    "domain": "science",
+    "fact_1": "Ammonia contains nitrogen and hydrogen.",
+    "fact_2": "Nitrogen has the atomic number 7.",
+    "question": "Ammonia contains an element with what atomic number?",
+    "answer": "7",
+    "bridge_entity": "nitrogen"
+  },
+  {
+    "id": "sci_030",
+    "domain": "science",
+    "fact_1": "The Voyager 1 probe left the solar system.",
+    "fact_2": "The solar system formed about 4.6 billion years ago.",
+    "question": "Voyager 1 left a system that formed how long ago?",
+    "answer": "4.6 billion years",
+    "bridge_entity": "the solar system"
+  },
+  {
+    "id": "sci_031",
+    "domain": "science",
+    "fact_1": "Chlorophyll absorbs sunlight.",
+    "fact_2": "Sunlight is a form of electromagnetic radiation.",
+    "question": "Chlorophyll absorbs a form of what?",
+    "answer": "electromagnetic radiation",
+    "bridge_entity": "sunlight"
+  },
+  {
+    "id": "sci_032",
+    "domain": "science",
+    "fact_1": "Venus has a thick atmosphere.",
+    "fact_2": "The atmosphere of Venus is mostly carbon dioxide.",
+    "question": "The thick atmosphere of Venus is mostly what gas?",
+    "answer": "carbon dioxide",
+    "bridge_entity": "the atmosphere of Venus"
+  },
+  {
+    "id": "sci_033",
+    "domain": "science",
+    "fact_1": "Uranium is used in nuclear reactors.",
+    "fact_2": "Uranium has the atomic number 92.",
+    "question": "Nuclear reactors use an element with what atomic number?",
+    "answer": "92",
+    "bridge_entity": "uranium"
+  },
+  {
+    "id": "sci_034",
+    "domain": "science",
+    "fact_1": "Tides are caused by the Moon gravity.",
+    "fact_2": "The Moon has a diameter of about 3474 kilometers.",
+    "question": "Tides are caused by the gravity of a body with what diameter?",
+    "answer": "3474 kilometers",
+    "bridge_entity": "the Moon"
+  },
+  {
+    "id": "sci_035",
+    "domain": "science",
+    "fact_1": "Comets orbit the Sun.",
+    "fact_2": "The Sun is about 4.6 billion years old.",
+    "question": "Comets orbit a star that is how old?",
+    "answer": "4.6 billion years",
+    "bridge_entity": "the Sun"
+  },
+  {
+    "id": "sci_036",
+    "domain": "science",
+    "fact_1": "Limestone is made of calcium carbonate.",
+    "fact_2": "Calcium carbonate has the chemical formula CaCO3.",
+    "question": "Limestone is made of a compound with what chemical formula?",
+    "answer": "CaCO3",
+    "bridge_entity": "calcium carbonate"
+  },
+  {
+    "id": "sci_037",
+    "domain": "science",
+    "fact_1": "Meteorites fall to Earth.",
+    "fact_2": "The Earth has one natural satellite.",
+    "question": "Meteorites fall to a planet with how many natural satellites?",
+    "answer": "one",
+    "bridge_entity": "the Earth"
+  },
+  {
+    "id": "sci_038",
+    "domain": "science",
+    "fact_1": "Neon is used in signs.",
+    "fact_2": "Neon is a noble gas.",
+    "question": "Signs use what type of gas?",
+    "answer": "noble gas",
+    "bridge_entity": "neon"
+  },
+  {
+    "id": "sci_039",
+    "domain": "science",
+    "fact_1": "Graphite is a form of carbon.",
+    "fact_2": "Carbon is essential for all known life.",
+    "question": "Graphite is a form of an element essential for what?",
+    "answer": "all known life",
+    "bridge_entity": "carbon"
+  },
+  {
+    "id": "sci_040",
+    "domain": "science",
+    "fact_1": "Quartz is made of silicon dioxide.",
+    "fact_2": "Silicon dioxide has the formula SiO2.",
+    "question": "Quartz is made of a compound with what formula?",
+    "answer": "SiO2",
+    "bridge_entity": "silicon dioxide"
+  },
+  {
+    "id": "sci_041",
+    "domain": "science",
+    "fact_1": "Jupiter has the Great Red Spot.",
+    "fact_2": "The Great Red Spot is a massive storm.",
+    "question": "Jupiter has a feature that is what type of phenomenon?",
+    "answer": "a massive storm",
+    "bridge_entity": "the Great Red Spot"
+  },
+  {
+    "id": "sci_042",
+    "domain": "science",
+    "fact_1": "Lava comes from magma.",
+    "fact_2": "Magma is molten rock beneath the Earth surface.",
+    "question": "Lava originates from molten rock beneath what?",
+    "answer": "the Earth surface",
+    "bridge_entity": "magma"
+  },
+  {
+    "id": "sci_043",
+    "domain": "science",
+    "fact_1": "Hail forms inside cumulonimbus clouds.",
+    "fact_2": "Cumulonimbus clouds are associated with thunderstorms.",
+    "question": "Hail forms inside clouds associated with what?",
+    "answer": "thunderstorms",
+    "bridge_entity": "cumulonimbus clouds"
+  },
+  {
+    "id": "sci_044",
+    "domain": "science",
+    "fact_1": "Glaciers are made of compressed snow.",
+    "fact_2": "Compressed snow transforms into dense ice over time.",
+    "question": "Glaciers are made of material that transforms into what?",
+    "answer": "dense ice",
+    "bridge_entity": "compressed snow"
+  },
+  {
+    "id": "sci_045",
+    "domain": "science",
+    "fact_1": "Fossil fuels contain carbon.",
+    "fact_2": "Carbon was first recognized as an element in 1789.",
+    "question": "Fossil fuels contain an element first recognized in what year?",
+    "answer": "1789",
+    "bridge_entity": "carbon"
+  },
+  {
+    "id": "sci_046",
+    "domain": "science",
+    "fact_1": "Stalactites form from mineral deposits.",
+    "fact_2": "Mineral deposits accumulate over thousands of years.",
+    "question": "Stalactites form from material that accumulates over what time period?",
+    "answer": "thousands of years",
+    "bridge_entity": "mineral deposits"
+  },
+  {
+    "id": "sci_047",
+    "domain": "science",
+    "fact_1": "LED lights use semiconductors.",
+    "fact_2": "Semiconductors conduct electricity under certain conditions.",
+    "question": "LED lights use materials that conduct electricity under what?",
+    "answer": "certain conditions",
+    "bridge_entity": "semiconductors"
+  },
+  {
+    "id": "sci_048",
+    "domain": "science",
+    "fact_1": "Black holes have extreme gravity.",
+    "fact_2": "Extreme gravity can bend light.",
+    "question": "Black holes can bend what?",
+    "answer": "light",
+    "bridge_entity": "extreme gravity"
+  },
+  {
+    "id": "sci_049",
+    "domain": "science",
+    "fact_1": "Coral reefs are built by coral polyps.",
+    "fact_2": "Coral polyps are tiny marine animals.",
+    "question": "Coral reefs are built by what type of organisms?",
+    "answer": "tiny marine animals",
+    "bridge_entity": "coral polyps"
+  },
+  {
+    "id": "sci_050",
+    "domain": "science",
+    "fact_1": "Tsunamis are caused by underwater earthquakes.",
+    "fact_2": "Underwater earthquakes occur along tectonic plate boundaries.",
+    "question": "Tsunamis are caused by events that occur along what?",
+    "answer": "tectonic plate boundaries",
+    "bridge_entity": "underwater earthquakes"
+  },
+  {
+    "id": "bio_001",
+    "domain": "biology",
+    "fact_1": "Hemoglobin carries oxygen in the blood.",
+    "fact_2": "Oxygen is essential for cellular respiration.",
+    "question": "Hemoglobin carries a gas essential for what process?",
+    "answer": "cellular respiration",
+    "bridge_entity": "oxygen"
+  },
+  {
+    "id": "bio_002",
+    "domain": "biology",
+    "fact_1": "Insulin is produced by the pancreas.",
+    "fact_2": "The pancreas is an organ in the digestive system.",
+    "question": "Insulin is produced by an organ in what system?",
+    "answer": "the digestive system",
+    "bridge_entity": "the pancreas"
+  },
+  {
+    "id": "bio_003",
+    "domain": "biology",
+    "fact_1": "DNA is stored in the nucleus.",
+    "fact_2": "The nucleus is a membrane-bound organelle.",
+    "question": "DNA is stored in what type of organelle?",
+    "answer": "membrane-bound",
+    "bridge_entity": "the nucleus"
+  },
+  {
+    "id": "bio_004",
+    "domain": "biology",
+    "fact_1": "Red blood cells are produced in bone marrow.",
+    "fact_2": "Bone marrow is found inside bones.",
+    "question": "Red blood cells are produced in tissue found inside what?",
+    "answer": "bones",
+    "bridge_entity": "bone marrow"
+  },
+  {
+    "id": "bio_005",
+    "domain": "biology",
+    "fact_1": "Bile is produced by the liver.",
+    "fact_2": "The liver is the largest internal organ.",
+    "question": "Bile is produced by what rank internal organ?",
+    "answer": "largest",
+    "bridge_entity": "the liver"
+  },
+  {
+    "id": "bio_006",
+    "domain": "biology",
+    "fact_1": "Pollen is produced by the stamen.",
+    "fact_2": "The stamen is the male reproductive organ of a flower.",
+    "question": "Pollen is produced by what type of organ in a flower?",
+    "answer": "male reproductive",
+    "bridge_entity": "the stamen"
+  },
+  {
+    "id": "bio_007",
+    "domain": "biology",
+    "fact_1": "Melanin determines skin color.",
+    "fact_2": "Skin color is influenced by exposure to sunlight.",
+    "question": "The substance that determines skin color is influenced by what?",
+    "answer": "exposure to sunlight",
+    "bridge_entity": "skin color"
+  },
+  {
+    "id": "bio_008",
+    "domain": "biology",
+    "fact_1": "Platelets help with blood clotting.",
+    "fact_2": "Blood clotting prevents excessive bleeding.",
+    "question": "Platelets help prevent what?",
+    "answer": "excessive bleeding",
+    "bridge_entity": "blood clotting"
+  },
+  {
+    "id": "bio_009",
+    "domain": "biology",
+    "fact_1": "Neurons transmit electrical signals.",
+    "fact_2": "Electrical signals in the body travel along nerve fibers.",
+    "question": "Neurons transmit signals that travel along what?",
+    "answer": "nerve fibers",
+    "bridge_entity": "electrical signals"
+  },
+  {
+    "id": "bio_010",
+    "domain": "biology",
+    "fact_1": "Chloroplasts contain chlorophyll.",
+    "fact_2": "Chlorophyll gives plants their green color.",
+    "question": "Chloroplasts contain a substance that gives what color?",
+    "answer": "green",
+    "bridge_entity": "chlorophyll"
+  },
+  {
+    "id": "bio_011",
+    "domain": "biology",
+    "fact_1": "Ribosomes synthesize proteins.",
+    "fact_2": "Proteins are made of amino acids.",
+    "question": "Ribosomes synthesize molecules made of what?",
+    "answer": "amino acids",
+    "bridge_entity": "proteins"
+  },
+  {
+    "id": "bio_012",
+    "domain": "biology",
+    "fact_1": "The heart pumps blood.",
+    "fact_2": "Blood delivers nutrients to cells.",
+    "question": "The heart pumps a fluid that delivers what to cells?",
+    "answer": "nutrients",
+    "bridge_entity": "blood"
+  },
+  {
+    "id": "bio_013",
+    "domain": "biology",
+    "fact_1": "Mitochondria produce ATP.",
+    "fact_2": "ATP provides energy for cellular processes.",
+    "question": "Mitochondria produce a molecule that provides what?",
+    "answer": "energy for cellular processes",
+    "bridge_entity": "ATP"
+  },
+  {
+    "id": "bio_014",
+    "domain": "biology",
+    "fact_1": "Enzymes are biological catalysts.",
+    "fact_2": "Catalysts speed up chemical reactions.",
+    "question": "Enzymes speed up what?",
+    "answer": "chemical reactions",
+    "bridge_entity": "catalysts"
+  },
+  {
+    "id": "bio_015",
+    "domain": "biology",
+    "fact_1": "The retina contains photoreceptor cells.",
+    "fact_2": "Photoreceptor cells detect light.",
+    "question": "The retina contains cells that detect what?",
+    "answer": "light",
+    "bridge_entity": "photoreceptor cells"
+  },
+  {
+    "id": "bio_016",
+    "domain": "biology",
+    "fact_1": "Antibodies are produced by B cells.",
+    "fact_2": "B cells are a type of white blood cell.",
+    "question": "Antibodies are produced by what type of blood cell?",
+    "answer": "white blood cell",
+    "bridge_entity": "B cells"
+  },
+  {
+    "id": "bio_017",
+    "domain": "biology",
+    "fact_1": "Seeds are dispersed by wind.",
+    "fact_2": "Wind dispersal helps plants colonize new areas.",
+    "question": "Seeds are dispersed by a force that helps plants do what?",
+    "answer": "colonize new areas",
+    "bridge_entity": "wind"
+  },
+  {
+    "id": "bio_018",
+    "domain": "biology",
+    "fact_1": "Keratin is found in hair.",
+    "fact_2": "Hair grows from follicles in the skin.",
+    "question": "Keratin is found in structures that grow from what?",
+    "answer": "follicles in the skin",
+    "bridge_entity": "hair"
+  },
+  {
+    "id": "bio_019",
+    "domain": "biology",
+    "fact_1": "Photosynthesis occurs in leaves.",
+    "fact_2": "Leaves absorb carbon dioxide from the air.",
+    "question": "Photosynthesis occurs in structures that absorb what gas?",
+    "answer": "carbon dioxide",
+    "bridge_entity": "leaves"
+  },
+  {
+    "id": "bio_020",
+    "domain": "biology",
+    "fact_1": "The cerebellum controls balance.",
+    "fact_2": "Balance is maintained through the vestibular system.",
+    "question": "The cerebellum controls a function maintained through what system?",
+    "answer": "the vestibular system",
+    "bridge_entity": "balance"
+  },
+  {
+    "id": "bio_021",
+    "domain": "biology",
+    "fact_1": "Xylem transports water in plants.",
+    "fact_2": "Water is absorbed by roots from the soil.",
+    "question": "Xylem transports a substance absorbed by what plant part?",
+    "answer": "roots",
+    "bridge_entity": "water"
+  },
+  {
+    "id": "bio_022",
+    "domain": "biology",
+    "fact_1": "Collagen provides structural support.",
+    "fact_2": "Structural support is critical for tendons.",
+    "question": "Collagen provides support critical for what body structure?",
+    "answer": "tendons",
+    "bridge_entity": "structural support"
+  },
+  {
+    "id": "bio_023",
+    "domain": "biology",
+    "fact_1": "The trachea carries air to the lungs.",
+    "fact_2": "The lungs are the primary organs of respiration.",
+    "question": "The trachea carries air to the primary organs of what?",
+    "answer": "respiration",
+    "bridge_entity": "the lungs"
+  },
+  {
+    "id": "bio_024",
+    "domain": "biology",
+    "fact_1": "Adrenaline is released by the adrenal glands.",
+    "fact_2": "The adrenal glands are located above the kidneys.",
+    "question": "Adrenaline is released by glands located above what organs?",
+    "answer": "the kidneys",
+    "bridge_entity": "the adrenal glands"
+  },
+  {
+    "id": "bio_025",
+    "domain": "biology",
+    "fact_1": "Hemoglobin is found in red blood cells.",
+    "fact_2": "Red blood cells have a lifespan of about 120 days.",
+    "question": "Hemoglobin is found in cells with what lifespan?",
+    "answer": "about 120 days",
+    "bridge_entity": "red blood cells"
+  },
+  {
+    "id": "bio_026",
+    "domain": "biology",
+    "fact_1": "Photoreceptors are located in the retina.",
+    "fact_2": "The retina is a layer at the back of the eye.",
+    "question": "Photoreceptors are located in a layer at the back of what?",
+    "answer": "the eye",
+    "bridge_entity": "the retina"
+  },
+  {
+    "id": "bio_027",
+    "domain": "biology",
+    "fact_1": "Stomata regulate gas exchange in leaves.",
+    "fact_2": "Gas exchange involves the intake of CO2 and release of O2.",
+    "question": "Stomata regulate a process involving the intake of what gas?",
+    "answer": "CO2",
+    "bridge_entity": "gas exchange"
+  },
+  {
+    "id": "bio_028",
+    "domain": "biology",
+    "fact_1": "Pepsin breaks down proteins in the stomach.",
+    "fact_2": "The stomach has a pH of about 2.",
+    "question": "Pepsin works in an organ with what pH?",
+    "answer": "about 2",
+    "bridge_entity": "the stomach"
+  },
+  {
+    "id": "bio_029",
+    "domain": "biology",
+    "fact_1": "Myelin covers nerve axons.",
+    "fact_2": "Nerve axons transmit signals between neurons.",
+    "question": "Myelin covers structures that transmit what?",
+    "answer": "signals between neurons",
+    "bridge_entity": "nerve axons"
+  },
+  {
+    "id": "bio_030",
+    "domain": "biology",
+    "fact_1": "Cartilage cushions joints.",
+    "fact_2": "Joints connect two or more bones.",
+    "question": "Cartilage cushions structures that connect what?",
+    "answer": "two or more bones",
+    "bridge_entity": "joints"
+  },
+  {
+    "id": "bio_031",
+    "domain": "biology",
+    "fact_1": "Lymphocytes fight infections.",
+    "fact_2": "Infections are caused by pathogenic microorganisms.",
+    "question": "Lymphocytes fight conditions caused by what?",
+    "answer": "pathogenic microorganisms",
+    "bridge_entity": "infections"
+  },
+  {
+    "id": "bio_032",
+    "domain": "biology",
+    "fact_1": "Alveoli exchange gases in the lungs.",
+    "fact_2": "The lungs contain about 480 million alveoli.",
+    "question": "Gas exchange occurs in structures found in the lungs numbering about how many?",
+    "answer": "480 million",
+    "bridge_entity": "alveoli"
+  },
+  {
+    "id": "bio_033",
+    "domain": "biology",
+    "fact_1": "Dendrites receive signals for neurons.",
+    "fact_2": "Neurons are the fundamental units of the nervous system.",
+    "question": "Dendrites receive signals for the fundamental units of what system?",
+    "answer": "the nervous system",
+    "bridge_entity": "neurons"
+  },
+  {
+    "id": "bio_034",
+    "domain": "biology",
+    "fact_1": "Melatonin regulates the sleep cycle.",
+    "fact_2": "The sleep cycle consists of several stages.",
+    "question": "Melatonin regulates a cycle consisting of what?",
+    "answer": "several stages",
+    "bridge_entity": "the sleep cycle"
+  },
+  {
+    "id": "bio_035",
+    "domain": "biology",
+    "fact_1": "Tendons connect muscles to bones.",
+    "fact_2": "Bones contain calcium.",
+    "question": "Tendons connect muscles to structures that contain what mineral?",
+    "answer": "calcium",
+    "bridge_entity": "bones"
+  },
+  {
+    "id": "bio_036",
+    "domain": "biology",
+    "fact_1": "Capillaries are the smallest blood vessels.",
+    "fact_2": "Blood vessels form the circulatory system.",
+    "question": "The smallest structures in what system are capillaries?",
+    "answer": "the circulatory system",
+    "bridge_entity": "blood vessels"
+  },
+  {
+    "id": "bio_037",
+    "domain": "biology",
+    "fact_1": "Amylase breaks down starch.",
+    "fact_2": "Starch is a polysaccharide found in plants.",
+    "question": "Amylase breaks down a polysaccharide found in what?",
+    "answer": "plants",
+    "bridge_entity": "starch"
+  },
+  {
+    "id": "bio_038",
+    "domain": "biology",
+    "fact_1": "The diaphragm controls breathing.",
+    "fact_2": "Breathing brings oxygen into the body.",
+    "question": "The diaphragm controls a process that brings what into the body?",
+    "answer": "oxygen",
+    "bridge_entity": "breathing"
+  },
+  {
+    "id": "bio_039",
+    "domain": "biology",
+    "fact_1": "Ovaries produce estrogen.",
+    "fact_2": "Estrogen regulates the female reproductive cycle.",
+    "question": "Ovaries produce a hormone that regulates what?",
+    "answer": "the female reproductive cycle",
+    "bridge_entity": "estrogen"
+  },
+  {
+    "id": "bio_040",
+    "domain": "biology",
+    "fact_1": "Taste buds detect flavors.",
+    "fact_2": "Flavors are perceived through chemical receptors on the tongue.",
+    "question": "Taste buds detect stimuli perceived through receptors on what?",
+    "answer": "the tongue",
+    "bridge_entity": "flavors"
+  },
+  {
+    "id": "bio_041",
+    "domain": "biology",
+    "fact_1": "White blood cells fight disease.",
+    "fact_2": "Disease can be caused by bacteria.",
+    "question": "White blood cells fight conditions caused by what?",
+    "answer": "bacteria",
+    "bridge_entity": "disease"
+  },
+  {
+    "id": "bio_042",
+    "domain": "biology",
+    "fact_1": "Ligaments connect bones to other bones.",
+    "fact_2": "Bones are living tissue that constantly remodels.",
+    "question": "Ligaments connect structures made of what type of tissue?",
+    "answer": "living tissue",
+    "bridge_entity": "bones"
+  },
+  {
+    "id": "bio_043",
+    "domain": "biology",
+    "fact_1": "The cornea refracts light entering the eye.",
+    "fact_2": "Light enters the eye through the pupil.",
+    "question": "The cornea refracts a form of energy that enters the eye through what?",
+    "answer": "the pupil",
+    "bridge_entity": "light"
+  },
+  {
+    "id": "bio_044",
+    "domain": "biology",
+    "fact_1": "Hemocyanin carries oxygen in crustaceans.",
+    "fact_2": "Crustaceans are a group of arthropods.",
+    "question": "Hemocyanin carries oxygen in a group of what?",
+    "answer": "arthropods",
+    "bridge_entity": "crustaceans"
+  },
+  {
+    "id": "bio_045",
+    "domain": "biology",
+    "fact_1": "The hypothalamus regulates body temperature.",
+    "fact_2": "Body temperature in humans is normally about 37 degrees Celsius.",
+    "question": "The hypothalamus regulates a parameter normally at what value?",
+    "answer": "37 degrees Celsius",
+    "bridge_entity": "body temperature"
+  },
+  {
+    "id": "bio_046",
+    "domain": "biology",
+    "fact_1": "Villi increase surface area in the intestine.",
+    "fact_2": "The intestine absorbs nutrients from food.",
+    "question": "Villi increase surface area in an organ that absorbs what?",
+    "answer": "nutrients from food",
+    "bridge_entity": "the intestine"
+  },
+  {
+    "id": "bio_047",
+    "domain": "biology",
+    "fact_1": "Sweat is produced by sweat glands.",
+    "fact_2": "Sweat glands are found in the dermis layer of skin.",
+    "question": "Sweat is produced by glands in what layer of skin?",
+    "answer": "the dermis",
+    "bridge_entity": "sweat glands"
+  },
+  {
+    "id": "bio_048",
+    "domain": "biology",
+    "fact_1": "Rhodopsin is found in rod cells.",
+    "fact_2": "Rod cells detect dim light.",
+    "question": "Rhodopsin is found in cells that detect what?",
+    "answer": "dim light",
+    "bridge_entity": "rod cells"
+  },
+  {
+    "id": "bio_049",
+    "domain": "biology",
+    "fact_1": "The spleen filters blood.",
+    "fact_2": "Blood circulates through the body carrying oxygen.",
+    "question": "The spleen filters a fluid that carries what?",
+    "answer": "oxygen",
+    "bridge_entity": "blood"
+  },
+  {
+    "id": "bio_050",
+    "domain": "biology",
+    "fact_1": "Ossicles transmit sound in the ear.",
+    "fact_2": "The ear converts sound waves into nerve impulses.",
+    "question": "Ossicles transmit sound in an organ that converts waves into what?",
+    "answer": "nerve impulses",
+    "bridge_entity": "the ear"
+  },
+  {
+    "id": "cul_001",
+    "domain": "culture",
+    "fact_1": "The Mona Lisa was painted by Leonardo da Vinci.",
+    "fact_2": "Leonardo da Vinci was born in Italy.",
+    "question": "The Mona Lisa was painted by an artist born in what country?",
+    "answer": "Italy",
+    "bridge_entity": "Leonardo da Vinci"
+  },
+  {
+    "id": "cul_002",
+    "domain": "culture",
+    "fact_1": "The Eiffel Tower is located in Paris.",
+    "fact_2": "Paris is the capital of France.",
+    "question": "The Eiffel Tower is located in the capital of what country?",
+    "answer": "France",
+    "bridge_entity": "Paris"
+  },
+  {
+    "id": "cul_003",
+    "domain": "culture",
+    "fact_1": "Sushi is a traditional food of Japan.",
+    "fact_2": "Japan is an island nation in East Asia.",
+    "question": "Sushi is a traditional food of an island nation in what region?",
+    "answer": "East Asia",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "cul_004",
+    "domain": "culture",
+    "fact_1": "The Great Wall was built in China.",
+    "fact_2": "China has the largest population in the world.",
+    "question": "The Great Wall was built in the country with what rank population?",
+    "answer": "largest",
+    "bridge_entity": "China"
+  },
+  {
+    "id": "cul_005",
+    "domain": "culture",
+    "fact_1": "Flamenco originated in Andalusia.",
+    "fact_2": "Andalusia is a region in southern Spain.",
+    "question": "Flamenco originated in a region in the south of what country?",
+    "answer": "Spain",
+    "bridge_entity": "Andalusia"
+  },
+  {
+    "id": "cul_006",
+    "domain": "culture",
+    "fact_1": "The Colosseum is located in Rome.",
+    "fact_2": "Rome was the capital of the Roman Empire.",
+    "question": "The Colosseum is in a city that was the capital of what empire?",
+    "answer": "the Roman Empire",
+    "bridge_entity": "Rome"
+  },
+  {
+    "id": "cul_007",
+    "domain": "culture",
+    "fact_1": "Bollywood is the film industry of India.",
+    "fact_2": "India has the second largest population in the world.",
+    "question": "Bollywood is the film industry of a country with what rank population?",
+    "answer": "second largest",
+    "bridge_entity": "India"
+  },
+  {
+    "id": "cul_008",
+    "domain": "culture",
+    "fact_1": "Carnival is celebrated in Rio de Janeiro.",
+    "fact_2": "Rio de Janeiro is a city in Brazil.",
+    "question": "Carnival is celebrated in a city in what country?",
+    "answer": "Brazil",
+    "bridge_entity": "Rio de Janeiro"
+  },
+  {
+    "id": "cul_009",
+    "domain": "culture",
+    "fact_1": "The pyramids are located in Giza.",
+    "fact_2": "Giza is a city near Cairo in Egypt.",
+    "question": "The pyramids are located near Cairo in what country?",
+    "answer": "Egypt",
+    "bridge_entity": "Giza"
+  },
+  {
+    "id": "cul_010",
+    "domain": "culture",
+    "fact_1": "Kung fu originated in China.",
+    "fact_2": "China is located in East Asia.",
+    "question": "Kung fu originated in a country in what region?",
+    "answer": "East Asia",
+    "bridge_entity": "China"
+  },
+  {
+    "id": "cul_011",
+    "domain": "culture",
+    "fact_1": "The Parthenon is located in Athens.",
+    "fact_2": "Athens is the capital of Greece.",
+    "question": "The Parthenon is in the capital of what country?",
+    "answer": "Greece",
+    "bridge_entity": "Athens"
+  },
+  {
+    "id": "cul_012",
+    "domain": "culture",
+    "fact_1": "Origami is a traditional art form of Japan.",
+    "fact_2": "Japan is known for its cherry blossoms.",
+    "question": "Origami is a traditional art of a country known for what flowers?",
+    "answer": "cherry blossoms",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "cul_013",
+    "domain": "culture",
+    "fact_1": "Shakespeare was born in Stratford-upon-Avon.",
+    "fact_2": "Stratford-upon-Avon is a town in England.",
+    "question": "Shakespeare was born in a town in what country?",
+    "answer": "England",
+    "bridge_entity": "Stratford-upon-Avon"
+  },
+  {
+    "id": "cul_014",
+    "domain": "culture",
+    "fact_1": "Taekwondo originated in South Korea.",
+    "fact_2": "South Korea is a country in East Asia.",
+    "question": "Taekwondo originated in a country in what region?",
+    "answer": "East Asia",
+    "bridge_entity": "South Korea"
+  },
+  {
+    "id": "cul_015",
+    "domain": "culture",
+    "fact_1": "The Louvre museum is in Paris.",
+    "fact_2": "Paris is known as the City of Light.",
+    "question": "The Louvre is in a city known as what?",
+    "answer": "the City of Light",
+    "bridge_entity": "Paris"
+  },
+  {
+    "id": "cul_016",
+    "domain": "culture",
+    "fact_1": "Pasta is a staple food of Italy.",
+    "fact_2": "Italy is shaped like a boot.",
+    "question": "Pasta is a staple food of a country shaped like what?",
+    "answer": "a boot",
+    "bridge_entity": "Italy"
+  },
+  {
+    "id": "cul_017",
+    "domain": "culture",
+    "fact_1": "The Taj Mahal is located in Agra.",
+    "fact_2": "Agra is a city in northern India.",
+    "question": "The Taj Mahal is in a city in the north of what country?",
+    "answer": "India",
+    "bridge_entity": "Agra"
+  },
+  {
+    "id": "cul_018",
+    "domain": "culture",
+    "fact_1": "Mariachi music originated in Mexico.",
+    "fact_2": "Mexico is located in North America.",
+    "question": "Mariachi music originated in a country on what continent?",
+    "answer": "North America",
+    "bridge_entity": "Mexico"
+  },
+  {
+    "id": "cul_019",
+    "domain": "culture",
+    "fact_1": "The Sistine Chapel is in Vatican City.",
+    "fact_2": "Vatican City is the smallest country in the world.",
+    "question": "The Sistine Chapel is in what rank smallest country?",
+    "answer": "the smallest",
+    "bridge_entity": "Vatican City"
+  },
+  {
+    "id": "cul_020",
+    "domain": "culture",
+    "fact_1": "Reggae music originated in Jamaica.",
+    "fact_2": "Jamaica is an island country in the Caribbean.",
+    "question": "Reggae originated in an island country in what sea?",
+    "answer": "the Caribbean",
+    "bridge_entity": "Jamaica"
+  },
+  {
+    "id": "cul_021",
+    "domain": "culture",
+    "fact_1": "Kimchi is a traditional food of Korea.",
+    "fact_2": "Korea is a peninsula in East Asia.",
+    "question": "Kimchi is a traditional food from a peninsula in what region?",
+    "answer": "East Asia",
+    "bridge_entity": "Korea"
+  },
+  {
+    "id": "cul_022",
+    "domain": "culture",
+    "fact_1": "Tango originated in Buenos Aires.",
+    "fact_2": "Buenos Aires is the capital of Argentina.",
+    "question": "Tango originated in the capital of what country?",
+    "answer": "Argentina",
+    "bridge_entity": "Buenos Aires"
+  },
+  {
+    "id": "cul_023",
+    "domain": "culture",
+    "fact_1": "The Acropolis is located in Athens.",
+    "fact_2": "Athens was the birthplace of democracy.",
+    "question": "The Acropolis is in a city considered the birthplace of what?",
+    "answer": "democracy",
+    "bridge_entity": "Athens"
+  },
+  {
+    "id": "cul_024",
+    "domain": "culture",
+    "fact_1": "Samurai were warriors of Japan.",
+    "fact_2": "Japan is an archipelago of over 6000 islands.",
+    "question": "Samurai were warriors of an archipelago with over how many islands?",
+    "answer": "6000",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "cul_025",
+    "domain": "culture",
+    "fact_1": "Machu Picchu is located in Peru.",
+    "fact_2": "Peru was part of the Inca Empire.",
+    "question": "Machu Picchu is in a country that was part of what empire?",
+    "answer": "the Inca Empire",
+    "bridge_entity": "Peru"
+  },
+  {
+    "id": "cul_026",
+    "domain": "culture",
+    "fact_1": "The Kremlin is located in Moscow.",
+    "fact_2": "Moscow is the capital of Russia.",
+    "question": "The Kremlin is in the capital of what country?",
+    "answer": "Russia",
+    "bridge_entity": "Moscow"
+  },
+  {
+    "id": "cul_027",
+    "domain": "culture",
+    "fact_1": "Haiku is a poetry form from Japan.",
+    "fact_2": "Japan has a population of about 125 million.",
+    "question": "Haiku is a poetry form from a country with what population?",
+    "answer": "about 125 million",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "cul_028",
+    "domain": "culture",
+    "fact_1": "Salsa dancing originated in Cuba.",
+    "fact_2": "Cuba is the largest island in the Caribbean.",
+    "question": "Salsa originated on the largest island in what region?",
+    "answer": "the Caribbean",
+    "bridge_entity": "Cuba"
+  },
+  {
+    "id": "cul_029",
+    "domain": "culture",
+    "fact_1": "The Sphinx is located in Giza.",
+    "fact_2": "Giza is on the outskirts of Cairo.",
+    "question": "The Sphinx is located on the outskirts of what city?",
+    "answer": "Cairo",
+    "bridge_entity": "Giza"
+  },
+  {
+    "id": "cul_030",
+    "domain": "culture",
+    "fact_1": "Borscht is a traditional soup of Ukraine.",
+    "fact_2": "Ukraine is the largest country entirely in Europe.",
+    "question": "Borscht is from the largest country entirely on what continent?",
+    "answer": "Europe",
+    "bridge_entity": "Ukraine"
+  },
+  {
+    "id": "cul_031",
+    "domain": "culture",
+    "fact_1": "The Globe Theatre was in London.",
+    "fact_2": "London is located on the River Thames.",
+    "question": "The Globe Theatre was in a city on what river?",
+    "answer": "the River Thames",
+    "bridge_entity": "London"
+  },
+  {
+    "id": "cul_032",
+    "domain": "culture",
+    "fact_1": "Baklava is a pastry popular in Turkey.",
+    "fact_2": "Turkey borders the Mediterranean Sea.",
+    "question": "Baklava is popular in a country that borders what sea?",
+    "answer": "the Mediterranean Sea",
+    "bridge_entity": "Turkey"
+  },
+  {
+    "id": "cul_033",
+    "domain": "culture",
+    "fact_1": "Capoeira originated in Brazil.",
+    "fact_2": "Brazil is the largest country in South America.",
+    "question": "Capoeira originated in the largest country on what continent?",
+    "answer": "South America",
+    "bridge_entity": "Brazil"
+  },
+  {
+    "id": "cul_034",
+    "domain": "culture",
+    "fact_1": "The Forbidden City is in Beijing.",
+    "fact_2": "Beijing has been China capital for over 800 years.",
+    "question": "The Forbidden City is in a city that has been a capital for how long?",
+    "answer": "over 800 years",
+    "bridge_entity": "Beijing"
+  },
+  {
+    "id": "cul_035",
+    "domain": "culture",
+    "fact_1": "Kabuki is a theater form from Japan.",
+    "fact_2": "Japan is located in the Pacific Ring of Fire.",
+    "question": "Kabuki is from a country in what geographic zone?",
+    "answer": "the Pacific Ring of Fire",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "cul_036",
+    "domain": "culture",
+    "fact_1": "Paella is a traditional dish of Spain.",
+    "fact_2": "Spain is located on the Iberian Peninsula.",
+    "question": "Paella is from a country on what peninsula?",
+    "answer": "the Iberian Peninsula",
+    "bridge_entity": "Spain"
+  },
+  {
+    "id": "cul_037",
+    "domain": "culture",
+    "fact_1": "The Alhambra is located in Granada.",
+    "fact_2": "Granada is a city in southern Spain.",
+    "question": "The Alhambra is in a city in the south of what country?",
+    "answer": "Spain",
+    "bridge_entity": "Granada"
+  },
+  {
+    "id": "cul_038",
+    "domain": "culture",
+    "fact_1": "Calligraphy is an important art in China.",
+    "fact_2": "China has the oldest continuous civilization.",
+    "question": "Calligraphy is an important art in the country with what distinction?",
+    "answer": "the oldest continuous civilization",
+    "bridge_entity": "China"
+  },
+  {
+    "id": "cul_039",
+    "domain": "culture",
+    "fact_1": "The Bolshoi Theatre is in Moscow.",
+    "fact_2": "Moscow was founded in the year 1147.",
+    "question": "The Bolshoi Theatre is in a city founded in what year?",
+    "answer": "1147",
+    "bridge_entity": "Moscow"
+  },
+  {
+    "id": "cul_040",
+    "domain": "culture",
+    "fact_1": "Sake is a traditional drink of Japan.",
+    "fact_2": "Japan consists of four main islands.",
+    "question": "Sake is a traditional drink from a country with how many main islands?",
+    "answer": "four",
+    "bridge_entity": "Japan"
+  },
+  {
+    "id": "cul_041",
+    "domain": "culture",
+    "fact_1": "Angkor Wat is located in Cambodia.",
+    "fact_2": "Cambodia is in Southeast Asia.",
+    "question": "Angkor Wat is in a country in what region?",
+    "answer": "Southeast Asia",
+    "bridge_entity": "Cambodia"
+  },
+  {
+    "id": "cul_042",
+    "domain": "culture",
+    "fact_1": "The Dead Sea Scrolls were found near Qumran.",
+    "fact_2": "Qumran is located in the West Bank.",
+    "question": "The Dead Sea Scrolls were found near a site in what territory?",
+    "answer": "the West Bank",
+    "bridge_entity": "Qumran"
+  },
+  {
+    "id": "cul_043",
+    "domain": "culture",
+    "fact_1": "Pho is a traditional soup of Vietnam.",
+    "fact_2": "Vietnam has a coastline along the South China Sea.",
+    "question": "Pho is from a country with a coastline along what sea?",
+    "answer": "the South China Sea",
+    "bridge_entity": "Vietnam"
+  },
+  {
+    "id": "cul_044",
+    "domain": "culture",
+    "fact_1": "Stonehenge is located in Wiltshire.",
+    "fact_2": "Wiltshire is a county in southern England.",
+    "question": "Stonehenge is in a county in the south of what country?",
+    "answer": "England",
+    "bridge_entity": "Wiltshire"
+  },
+  {
+    "id": "cul_045",
+    "domain": "culture",
+    "fact_1": "The Terracotta Army is in Xian.",
+    "fact_2": "Xian was the starting point of the Silk Road.",
+    "question": "The Terracotta Army is in the starting point of what trade route?",
+    "answer": "the Silk Road",
+    "bridge_entity": "Xian"
+  },
+  {
+    "id": "cul_046",
+    "domain": "culture",
+    "fact_1": "Croissants are a pastry associated with France.",
+    "fact_2": "France is the most visited country in the world.",
+    "question": "Croissants are from what rank most visited country?",
+    "answer": "the most visited",
+    "bridge_entity": "France"
+  },
+  {
+    "id": "cul_047",
+    "domain": "culture",
+    "fact_1": "The Sagrada Familia is in Barcelona.",
+    "fact_2": "Barcelona is a city in northeastern Spain.",
+    "question": "The Sagrada Familia is in a city in the northeast of what country?",
+    "answer": "Spain",
+    "bridge_entity": "Barcelona"
+  },
+  {
+    "id": "cul_048",
+    "domain": "culture",
+    "fact_1": "Dim sum is a culinary tradition of Canton.",
+    "fact_2": "Canton is a region in southern China.",
+    "question": "Dim sum is a tradition from a region in the south of what country?",
+    "answer": "China",
+    "bridge_entity": "Canton"
+  },
+  {
+    "id": "cul_049",
+    "domain": "culture",
+    "fact_1": "The Uffizi Gallery is in Florence.",
+    "fact_2": "Florence is a city in the Tuscany region of Italy.",
+    "question": "The Uffizi Gallery is in a city in what region of Italy?",
+    "answer": "Tuscany",
+    "bridge_entity": "Florence"
+  },
+  {
+    "id": "cul_050",
+    "domain": "culture",
+    "fact_1": "Mardi Gras is celebrated in New Orleans.",
+    "fact_2": "New Orleans is a city in Louisiana.",
+    "question": "Mardi Gras is celebrated in a city in what state?",
+    "answer": "Louisiana",
+    "bridge_entity": "New Orleans"
+  }
+]
