@@ -1,0 +1,78 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*.so
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# Conda environments
+conda-meta/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# =========================
+# OS junk
+# =========================
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# HuggingFace / Model cache
+# =========================
+.cache/
+huggingface/
+hf_cache/
+models/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Experiment artifacts
+# =========================
+results/*.tmp
+results/*.cache
+
+# =========================
+# Dataset drafts (keep final dataset)
+# =========================
+dataset/dataset_draft.json
+
+# =========================
+# Large files
+# =========================
+*.pt
+*.bin
+*.ckpt
+*.safetensors
