@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $envName = "enhancing-reasoning-mi"
 $envFile = "setup-env/environment.yml"
-$verifyScript = "setup-env/setup-scripts/verify_env.py"
+$verifyScript = "scripts/utils/verify_env.py"
 
 Write-Host "=== Thesis Environment Setup ===" -ForegroundColor Cyan
 

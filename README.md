@@ -1,4 +1,4 @@
-# Enhancing Reasoning Abilities of LLMs
+# Enhancing Reasoning Abilities of Large Language Models
 
 Experimental code for the honours thesis:
 
@@ -26,6 +26,27 @@ Primary analysis method:
 Secondary diagnostics:
 - Logit lens analysis (emergence layer comparison across conditions)
 - Attention head visualisation (qualitative routing illustration)
+
+---
+
+# Quick Start
+
+From the repository root:
+
+```bash
+# Setup environment
+.\setup\setup.ps1
+
+# Run full experiment pipeline
+python scripts/phase_0_sanity/prompt_inference_check.py
+python scripts/phase_1_dataset/build_dataset.py
+python scripts/phase_2_behaviour/run_evaluation.py
+python scripts/phase_2_behaviour/run_noisy_contrasts.py
+python scripts/phase_3a_layer_patching/activation_patching.py
+python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31
+python scripts/phase_3b_component_patching/head_patching.py --layers 30 31
+python scripts/phase_3c_cross_condition/cross_condition_patching.py
+python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
 
 ---
 
@@ -80,57 +101,114 @@ The goal is to identify which transformer components causally contribute to
 structured reasoning behaviour and whether contextual distractors shift
 that causal pattern.
 
+## Full Pipeline Execution
+
+From a clean repository state, the entire experiment can be run with:
+
+python scripts/phase_0_sanity/prompt_inference_check.py
+python scripts/phase_1_dataset/build_dataset.py
+python scripts/phase_2_behaviour/run_evaluation.py
+python scripts/phase_2_behaviour/run_noisy_contrasts.py
+python scripts/phase_3a_layer_patching/activation_patching.py
+python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31
+python scripts/phase_3b_component_patching/head_patching.py --layers 30 31
+python scripts/phase_3c_cross_condition/cross_condition_patching.py
+python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
+
 ---
 
 # Repository Structure
 
 ```
+# Repository Structure
+
 dataset/
-    entity_chains.json          — raw A→B→C entity chains
-    distractors.json            — domain-specific distractor facts
-    dataset.json                — final dataset with all 5 cells per example
+  raw/
+    entity_chains.json
+    distractors.json
+
+  processed/
+    dataset.json
+    contrast_examples.json
+    noisy_contrast_examples.json
 
 scripts/
-    load_model_test.py          — Phase 0: model sanity check
-    build_dataset.py            — Phase 1: dataset construction
-    run_evaluation.py           — Phase 2: behavioural evaluation
-    run_noisy_contrasts.py      — identify noisy contrast examples (B wrong ∧ D correct)
-    activation_patching.py      — Phase 3a: layer-level patching
-    component_patching.py       — Phase 3b step 1: attention vs MLP decomposition
-    head_patching.py            — Phase 3b step 2: individual head patching
-    cross_condition_patching.py — Phase 3c: clean vs noisy comparison
-    logit_lens_analysis.py      — Phase 4a: logit lens diagnostic
+  phase_0_sanity/
+    prompt_inference_check.py
+
+  phase_1_dataset/
+    build_dataset.py
+
+  phase_2_behaviour/
+    run_evaluation.py
+    run_noisy_contrasts.py
+
+  phase_3a_layer_patching/
+    activation_patching.py
+
+  phase_3b_component_patching/
+    component_patching.py
+    head_patching.py
+
+  phase_3c_cross_condition/
+    cross_condition_patching.py
+
+  phase_4_logit_lens/
+    logit_lens_analysis.py
+
+  utils/
+    verify_env.py
 
 results/
-    evaluation_results.csv      — one row per (example, cell)
-    accuracy_summary.csv        — per-cell accuracy table
-    contrast_examples.json      — clean contrasts (A wrong ∧ C correct)
-    noisy_contrast_examples.json — noisy contrasts (B wrong ∧ D correct)
-    layer_patch_results.csv     — layer-level patching per (example, layer)
-    layer_patch_summary.csv     — per-layer aggregated Δℓ
-    component_patch_results.csv — component-level per (example, layer, component)
-    component_patch_summary.csv — per-(layer, component) aggregated Δℓ,c
-    head_patch_results.csv      — head-level per (example, layer, head)
-    head_patch_summary.csv      — per-(layer, head) aggregated Δℓ,h
+  phase_1_dataset/
+    dataset_alignment_report.csv
+
+  phase_2_behaviour/
+    evaluation_results.csv
+    accuracy_summary.csv
+
+  phase_3a_layer_patching/
+    layer_patch_results.csv
+    layer_patch_summary.csv
     noisy_layer_patch_results.csv
     noisy_layer_patch_summary.csv
+
+  phase_3b_component_patching/
+    component_patch_results.csv
+    component_patch_summary.csv
+    head_patch_results.csv
+    head_patch_summary.csv
+
+  phase_3c_cross_condition/
     cross_condition_layer_comparison.csv
 
+  phase_4_logit_lens/
+    logit_lens_per_example_clean.csv
+    logit_lens_per_example_noisy.csv
+    logit_lens_summary_clean.csv
+    logit_lens_summary_noisy.csv
+
 figures/
+  phase_3a_layer_patching/
     layer_patch_curve.png
+    clean_vs_noisy_layer_patch_overlay.png
+
+  phase_3b_component_patching/
     component_patch_heatmap.png
     head_patch_heatmap.png
-    clean_vs_noisy_layer_patch_overlay.png
-    logit_lens_top1_clean.png
-    logit_lens_top1_noisy.png
+
+  phase_4_logit_lens/
     logit_lens_logit_clean.png
     logit_lens_logit_noisy.png
+    logit_lens_top1_clean.png
+    logit_lens_top1_noisy.png
 
-setup-env/
-    setup-scripts/
-        verify_env.py
-    environment.yml
-    setup.ps1
+setup/
+  environment.yml
+  setup.ps1
+
+README.md
+.gitignore
 ```
 
 ---
@@ -159,7 +237,7 @@ This will:
 The setup script runs:
 
 ```powershell
-python setup-env/setup-scripts/verify_env.py
+python scripts/utils/verify_env.py
 ```
 
 This checks:
@@ -189,134 +267,113 @@ conda activate enhancing-reasoning-mi
 ---
 
 # Running the Experiment
+# Running the Experiment
 
-### Phase 0 — Model Sanity Check
+All scripts assume the current working directory is the repository root.
 
-```
-python scripts/load_model_test.py
-```
-
-Verifies model loading, few-shot generation, and activation caching.
+The entire pipeline can be executed sequentially with default parameters.
 
 ---
 
-### Phase 1 — Generate Dataset
+## Phase 0 — Model Sanity Check
 
-```
-python scripts/build_dataset.py
-```
+Verifies model loading, generation, and activation caching.
 
-Outputs:
-
-```
-dataset/entity_chains.json
-dataset/distractors.json
-dataset/dataset.json
-```
+python scripts/phase_0_sanity/prompt_inference_check.py
 
 ---
 
-### Phase 2 — Behavioural Evaluation
+## Phase 1 — Dataset Construction
 
-```
-python scripts/run_evaluation.py \
-    --dataset dataset/dataset.json \
-    --output-dir results \
-    --model EleutherAI/pythia-2.8b
-```
+Builds the synthetic dataset and verifies token alignment.
+
+python scripts/phase_1_dataset/build_dataset.py
 
 Outputs:
 
-```
-results/evaluation_results.csv
-results/accuracy_summary.csv
-results/contrast_examples.json
-```
+dataset/processed/dataset.json
+results/phase_1_dataset/dataset_alignment_report.csv
 
 ---
 
-### Phase 3a — Layer-Level Activation Patching
+## Phase 2 — Behavioural Evaluation
 
-```
-python scripts/activation_patching.py \
-    --contrast-file results/contrast_examples.json \
-    --output-dir results \
-    --model EleutherAI/pythia-2.8b
-```
+Runs all prompt cells and computes exact-match accuracy.
+
+python scripts/phase_2_behaviour/run_evaluation.py
 
 Outputs:
 
-```
-results/layer_patch_results.csv
-results/layer_patch_summary.csv
-figures/layer_patch_curve.png
-```
+results/phase_2_behaviour/evaluation_results.csv
+results/phase_2_behaviour/accuracy_summary.csv
+dataset/processed/contrast_examples.json
+
+Identify noisy contrast examples:
+
+python scripts/phase_2_behaviour/run_noisy_contrasts.py
+
+Outputs:
+
+dataset/processed/noisy_contrast_examples.json
 
 ---
 
-### Phase 3b — Component-Level and Head-Level Patching
+## Phase 3a — Layer-Level Activation Patching
 
-```
-python scripts/component_patching.py \
-    --contrast-file results/contrast_examples.json \
-    --output-dir results \
-    --layers 24 25 29 30 31
+Computes causal mediation curves across transformer layers.
 
-python scripts/head_patching.py \
-    --contrast-file results/contrast_examples.json \
-    --output-dir results \
-    --layers 30 31
-```
+python scripts/phase_3a_layer_patching/activation_patching.py
 
 Outputs:
 
-```
-results/component_patch_results.csv
-results/component_patch_summary.csv
-results/head_patch_results.csv
-results/head_patch_summary.csv
-figures/component_patch_heatmap.png
-figures/head_patch_heatmap.png
-```
+results/phase_3a_layer_patching/layer_patch_results.csv
+results/phase_3a_layer_patching/layer_patch_summary.csv
+figures/phase_3a_layer_patching/layer_patch_curve.png
 
 ---
 
-### Phase 3c — Cross-Condition Comparison (Clean vs Noisy)
+## Phase 3b — Component and Head Patching
 
-```
-python scripts/cross_condition_patching.py \
-    --dataset dataset/dataset.json \
-    --eval-results results/evaluation_results.csv \
-    --clean-summary results/layer_patch_summary.csv \
-    --output-dir results
-```
+Decomposes layer mediation into attention and MLP components,
+then evaluates individual attention heads.
+
+python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31
+
+python scripts/phase_3b_component_patching/head_patching.py --layers 30 31
 
 Outputs:
 
-```
-results/noisy_contrast_examples.json
-results/noisy_layer_patch_results.csv
-results/noisy_layer_patch_summary.csv
-results/cross_condition_layer_comparison.csv
-figures/clean_vs_noisy_layer_patch_overlay.png
-```
+results/phase_3b_component_patching/component_patch_results.csv
+results/phase_3b_component_patching/component_patch_summary.csv
+results/phase_3b_component_patching/head_patch_results.csv
+results/phase_3b_component_patching/head_patch_summary.csv
+
+figures/phase_3b_component_patching/component_patch_heatmap.png
+figures/phase_3b_component_patching/head_patch_heatmap.png
 
 ---
 
-### Phase 4 — Logit Lens Diagnostic
+## Phase 3c — Cross-Condition Comparison
 
-```
-python scripts/logit_lens_analysis.py --include-noisy
-```
+Compares clean and noisy reasoning circuits.
+
+python scripts/phase_3c_cross_condition/cross_condition_patching.py
 
 Outputs:
 
-```
-figures/logit_lens_top1_clean.png
-figures/logit_lens_top1_noisy.png
-figures/logit_lens_logit_clean.png
-figures/logit_lens_logit_noisy.png
-```
+results/phase_3a_layer_patching/noisy_layer_patch_results.csv
+results/phase_3a_layer_patching/noisy_layer_patch_summary.csv
+results/phase_3c_cross_condition/cross_condition_layer_comparison.csv
+
+figures/phase_3a_layer_patching/clean_vs_noisy_layer_patch_overlay.png
+
+---
+
+## Phase 4 — Logit Lens Diagnostic
+
+Examines the emergence layer of the correct answer representation.
+
+python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
 
 ---
 
@@ -350,6 +407,25 @@ and whether contextual distractors shift those pathways.
 
 Methodological precedents: Wang et al. 2022 (IOI circuit), Meng et al. 2022
 (ROME/causal tracing), Elhage et al. 2021 (transformer circuits framework).
+
+---
+
+# Reproducibility Notes
+
+- All experiments use the base model `EleutherAI/pythia-2.8b`.
+- Generation is deterministic (`temperature=0`, `do_sample=False`).
+- All prompt variants are token-aligned using the Pythia tokenizer.
+- Contrast examples are defined as cases where:
+  - Direct prompting fails (Cell A incorrect)
+  - Structured prompting succeeds (Cell C correct)
+
+Activation patching experiments use the structured run (Cell C) as the
+activation source and the direct run (Cell A) as the baseline forward pass.
+
+Reported mediation values (Δℓ) correspond to the change in the gold answer
+logit when patched activations are injected at the final token position.
+
+All analysis scripts assume execution from the repository root.
 
 ---
 
