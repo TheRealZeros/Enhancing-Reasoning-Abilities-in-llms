@@ -61,6 +61,10 @@ OUTPUT FILES
   results/logit_lens_summary_clean.csv      — aggregated (clean)
   results/logit_lens_per_example_noisy.csv  — per-example, per-layer (noisy)
   results/logit_lens_summary_noisy.csv      — aggregated (noisy)
+  results/figures/logit_lens_top1_clean.png  — top-1 rate vs layer (clean)
+  results/figures/logit_lens_logit_clean.png — mean gold logit vs layer (clean)
+  results/figures/logit_lens_top1_noisy.png  — top-1 rate vs layer (noisy)
+  results/figures/logit_lens_logit_noisy.png — mean gold logit vs layer (noisy)
 
 Thesis terminology:
   direct prompt, structured prompt, filler control, contrast examples,
@@ -76,6 +80,9 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend for headless figure saving
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -526,6 +533,118 @@ def write_csv(rows: list, path: str, fieldnames: list) -> None:
 
 
 # ============================================================================
+# Plotting
+# ============================================================================
+
+# Display labels for conditions (used in legends and titles)
+CONDITION_LABELS = {
+    "cell_A": "Cell A (direct clean)",
+    "cell_B": "Cell B (direct noisy)",
+    "cell_C": "Cell C (structured clean)",
+    "cell_D": "Cell D (structured noisy)",
+}
+
+# Line colours: direct = muted, structured = saturated
+CONDITION_COLOURS = {
+    "cell_A": "#7f8c8d",   # grey
+    "cell_B": "#7f8c8d",   # grey
+    "cell_C": "#2980b9",   # blue
+    "cell_D": "#2980b9",   # blue
+}
+
+CONDITION_LINESTYLES = {
+    "cell_A": "--",
+    "cell_B": "--",
+    "cell_C": "-",
+    "cell_D": "-",
+}
+
+
+def _extract_series(summary_rows: list, condition: str, y_key: str):
+    """Extract (layers, values) arrays for one condition from summary rows."""
+    rows = sorted(
+        [r for r in summary_rows if r["condition"] == condition],
+        key=lambda r: r["layer"],
+    )
+    layers = [r["layer"] for r in rows]
+    values = [r[y_key] for r in rows]
+    return layers, values
+
+
+def plot_top1_curve(summary_rows: list, output_path: str, title: str) -> None:
+    """
+    Plot top-1 rate vs layer for two conditions.
+    X-axis: layer index.  Y-axis: proportion of contrast examples where the
+    gold answer's first token is the top-1 prediction at that layer.
+    """
+    conditions = sorted(set(r["condition"] for r in summary_rows))
+    if len(conditions) != 2:
+        log(f"[plot] WARN: expected 2 conditions, got {conditions} — skipping plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    for cond in conditions:
+        layers, vals = _extract_series(summary_rows, cond, "top1_rate")
+        ax.plot(
+            layers, vals,
+            label=CONDITION_LABELS.get(cond, cond),
+            color=CONDITION_COLOURS.get(cond, None),
+            linestyle=CONDITION_LINESTYLES.get(cond, "-"),
+            linewidth=1.8,
+        )
+
+    ax.set_xlabel("Layer", fontsize=11)
+    ax.set_ylabel("Top-1 Rate", fontsize=11)
+    ax.set_title(title, fontsize=12)
+    ax.legend(fontsize=9)
+    ax.set_xlim(0, max(r["layer"] for r in summary_rows))
+    ax.set_ylim(-0.02, 1.02)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    log(f"[figure] Saved -> {output_path}")
+
+
+def plot_logit_curve(summary_rows: list, output_path: str, title: str) -> None:
+    """
+    Plot mean gold-token logit vs layer for two conditions.
+    X-axis: layer index.  Y-axis: mean logit assigned to the gold answer's
+    first token across contrast examples.
+    """
+    conditions = sorted(set(r["condition"] for r in summary_rows))
+    if len(conditions) != 2:
+        log(f"[plot] WARN: expected 2 conditions, got {conditions} — skipping plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    for cond in conditions:
+        layers, vals = _extract_series(summary_rows, cond, "mean_gold_logit")
+        ax.plot(
+            layers, vals,
+            label=CONDITION_LABELS.get(cond, cond),
+            color=CONDITION_COLOURS.get(cond, None),
+            linestyle=CONDITION_LINESTYLES.get(cond, "-"),
+            linewidth=1.8,
+        )
+
+    ax.set_xlabel("Layer", fontsize=11)
+    ax.set_ylabel("Mean Gold-Token Logit", fontsize=11)
+    ax.set_title(title, fontsize=12)
+    ax.legend(fontsize=9)
+    ax.set_xlim(0, max(r["layer"] for r in summary_rows))
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    log(f"[figure] Saved -> {output_path}")
+
+
+# ============================================================================
 # Run one analysis pass (clean or noisy)
 # ============================================================================
 
@@ -536,6 +655,7 @@ def run_pass(
     cell_structured: str,
     dataset_index: dict | None,
     outdir: str,
+    figdir: str,
     suffix: str,
     max_examples: int | None,
     device: str,
@@ -549,6 +669,7 @@ def run_pass(
     cell_baseline  — "A" for clean, "B" for noisy
     cell_structured — "C" for clean, "D" for noisy
     suffix         — "_clean" or "_noisy" for output filenames
+    figdir         — directory for figure output (e.g. results/figures)
     """
     tag = "clean" if cell_baseline == "A" else "noisy"
 
@@ -633,6 +754,20 @@ def run_pass(
     # Print summary to console
     print_emergence(summary, cell_baseline, cell_structured)
 
+    # ---- Generate figures ----
+    tag_title = "Clean" if cell_baseline == "A" else "Noisy"
+
+    plot_top1_curve(
+        summary,
+        str(Path(figdir) / f"logit_lens_top1{suffix}.png"),
+        f"Logit Lens: Top-1 Rate by Layer ({tag_title} Contrast)",
+    )
+    plot_logit_curve(
+        summary,
+        str(Path(figdir) / f"logit_lens_logit{suffix}.png"),
+        f"Logit Lens: Mean Gold-Token Logit by Layer ({tag_title} Contrast)",
+    )
+
 
 # ============================================================================
 # Main
@@ -662,6 +797,10 @@ def main():
     parser.add_argument(
         "--outdir", type=str, default="results",
         help="Output directory for CSV files"
+    )
+    parser.add_argument(
+        "--figdir", type=str, default="results/figures",
+        help="Output directory for figure PNG files"
     )
     parser.add_argument(
         "--model", type=str, default="EleutherAI/pythia-2.8b",
@@ -710,6 +849,7 @@ def main():
     log(f"  Run clean:       {run_clean}")
     log(f"  Run noisy:       {run_noisy}")
     log(f"  Output dir:      {args.outdir}")
+    log(f"  Figure dir:      {args.figdir}")
     log(f"  Max examples:    {args.max_examples or 'all'}")
     log("")
 
@@ -743,6 +883,7 @@ def main():
                 cell_structured="C",
                 dataset_index=dataset_index,
                 outdir=args.outdir,
+                figdir=args.figdir,
                 suffix="_clean",
                 max_examples=args.max_examples,
                 device=args.device,
@@ -777,6 +918,7 @@ def main():
                 cell_structured="D",
                 dataset_index=dataset_index,
                 outdir=args.outdir,
+                figdir=args.figdir,
                 suffix="_noisy",
                 max_examples=args.max_examples,
                 device=args.device,
@@ -784,8 +926,9 @@ def main():
 
     # ---- Done ----
     log(f"\nPhase 4a COMPLETE.")
-    log(f"  Output dir: {args.outdir}/")
-    log(f"  Next: produce logit lens figures, then proceed to Phase 4b.")
+    log(f"  CSVs:    {args.outdir}/")
+    log(f"  Figures: {args.figdir}/")
+    log(f"  Next: review figures, then proceed to Phase 4b (attention heatmaps).")
     log(f"  Remember: logit lens is secondary — interpret alongside")
     log(f"  activation patching results from Phases 3a-3c.")
 
