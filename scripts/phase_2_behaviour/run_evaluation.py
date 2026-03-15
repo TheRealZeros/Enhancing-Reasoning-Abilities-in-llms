@@ -8,7 +8,7 @@ computes exact-match accuracy, and identifies contrast examples
 
 Usage:
     python scripts/phase_2_behaviour/run_evaluation.py
-    python scripts/phase_2_behaviour/run_evaluation.py --max-new-tokens 16 --device cuda
+    python scripts/phase_2_behaviour/run_evaluation.py --max-new-tokens 20 --device cuda
 
 Outputs:
     results/phase_2_behaviour/evaluation_results.csv   – one row per (example, cell)
