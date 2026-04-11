@@ -20,12 +20,14 @@ conditions and analyses internal model activations using mechanistic
 interpretability techniques.
 
 Primary analysis method:
-- Activation patching (causal) using TransformerLens — layer-level,
-  component-level (attention vs MLP), and individual attention head patching
+- Activation patching (causal) using TransformerLens:
+  - layer-level mediation (Δℓ curves)
+  - component-level decomposition (attention vs MLP)
+  - attention head-level attribution
 
 Secondary diagnostics:
-- Logit lens analysis (emergence layer comparison across conditions)
-- Attention head visualisation (qualitative routing illustration)
+- Logit lens analysis (emergence layer comparison)
+- Attention pattern visualisation (final-token routing behaviour)
 
 ---
 
@@ -50,76 +52,134 @@ python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
 
 ---
 
+# Current Status
+
+The full experimental pipeline has been implemented and executed.
+
+Completed:
+
+- Phase 0: Model sanity check
+- Phase 1: Dataset construction (200 aligned examples)
+- Phase 2: Behavioural evaluation
+- Phase 3a: Layer-level activation patching
+- Phase 3b: Component and head-level patching
+- Phase 3c: Cross-condition comparison (clean vs noisy)
+- Phase 4a: Logit lens analysis
+- Phase 4b: Attention visualisation (initial run complete, refinement ongoing)
+
+---
+
+# Key Results (High-Level)
+
+Behavioural:
+
+- Structured prompting improves multi-hop reasoning accuracy:
+  - Cell C > Cell A
+  - Cell D > Cell B
+- Noisy structured condition (Cell D) performs strongest overall
+- Filler control (Cell E) ≈ 0%, confirming length alone does not explain improvements
+
+Mechanistic:
+
+- Late layers (24–31) carry the majority of causal mediation
+- Final-layer MLP contributes strongly to correct answer formation
+- Attention components contribute but are more distributed
+
+Cross-condition:
+
+- Similar causal layers appear in clean and noisy conditions
+- Noisy condition shows stronger late-layer mediation
+
+Logit lens:
+
+- Correct answer becomes linearly decodable earlier under structured prompting
+- Structured prompts shift representation formation forward across layers
+
+Attention (Phase 4b):
+
+- Direct prompting shows narrow, collapsed attention near answer tokens
+- Structured prompting shows broader attention across relevant context
+- Late layers (30–31) show clearer routing differences between conditions
+
+---
+
 # Experiment Design
 
 The dataset consists of 200 synthetic two-hop reasoning examples across four
-domains (geography, science, biology, culture). Each example contains an
-A→B→C entity chain where the question asks for the composition r2(r1(A)),
-and the gold answer is entity C.
+domains (geography, science, biology, culture).
 
-Each example is evaluated under five prompt conditions (cells):
+Each example follows:
+
+A → B → C
+
+The model must compute:
+
+r2(r1(A)) = C
+
+---
+
+## Prompt Conditions
 
 | Cell | Prompt Type | Context |
 |------|-------------|---------|
-| A | Direct (few-shot, direct answers) | Clean (2 supporting facts only) |
-| B | Direct | Noisy (+ 3 distractor facts) |
-| C | Structured (few-shot, Step 1 / Step 2 reasoning) | Clean |
-| D | Structured | Noisy (+ 3 distractor facts) |
-| E | Filler control (length-matched neutral padding) | Clean |
+| A | Direct (few-shot, direct answers) | Clean |
+| B | Direct | Noisy (+ 3 distractors) |
+| C | Structured (Step 1 / Step 2) | Clean |
+| D | Structured | Noisy (+ 3 distractors) |
+| E | Filler control | Clean |
 
-All five prompt variants for every example have identical token counts,
-verified using the Pythia tokeniser. This is a strict prerequisite for
-valid activation patching.
+All prompt variants are strictly token-aligned.
 
-**Contrast examples** are defined as cases where Cell A (direct) produces the
-wrong answer and Cell C (structured) produces the correct answer. These
-examples are used for all downstream activation analysis. Noisy contrasts
-(Cell B wrong, Cell D correct) are identified separately for cross-condition
-comparison.
+---
+
+## Contrast Examples
+
+Defined as:
+
+Cell A incorrect AND Cell C correct
+
+Used for all activation-level analysis.
 
 ---
 
 # Experiment Pipeline
 
-The workflow follows five main phases:
-
-1. **Phase 0 — Model sanity check:** Verify model loads, few-shot prompting
-   works, and activation caching functions correctly.
-2. **Phase 1 — Synthetic dataset construction:** Build 200 token-aligned
-   examples across all five cells with entity chains and distractors.
-3. **Phase 2 — Behavioural evaluation:** Run all cells, compute exact-match
-   accuracy, and identify contrast examples.
-4. **Phase 3 — Activation patching:**
-   - 3a: Layer-level residual stream patching (Δℓ curves)
-   - 3b: Component-level decomposition (attention vs MLP) at high-effect layers,
-     followed by individual attention head patching
-   - 3c: Cross-condition comparison (clean vs noisy Δℓ overlay)
-5. **Phase 4 — Diagnostic analysis:** Logit lens and attention visualisation
-   to support interpretation of activation patching results.
-
-The goal is to identify which transformer components causally contribute to
-structured reasoning behaviour and whether contextual distractors shift
-that causal pattern.
-
-## Full Pipeline Execution
-
-From a clean repository state, the entire experiment can be run with:
-
-python scripts/phase_0_sanity/prompt_inference_check.py
-python scripts/phase_1_dataset/build_dataset.py
-python scripts/phase_2_behaviour/run_evaluation.py
-python scripts/phase_2_behaviour/run_noisy_contrasts.py
-python scripts/phase_3a_layer_patching/activation_patching.py
-python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31
-python scripts/phase_3b_component_patching/head_patching.py --layers 30 31
-python scripts/phase_3c_cross_condition/cross_condition_patching.py
-python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
+1. Phase 0 — Sanity check  
+2. Phase 1 — Dataset construction  
+3. Phase 2 — Behavioural evaluation  
+4. Phase 3 — Activation patching  
+   - 3a: Layer-level  
+   - 3b: Component + head-level  
+   - 3c: Cross-condition  
+5. Phase 4 — Diagnostics  
+   - 4a: Logit lens  
+   - 4b: Attention visualisation  
 
 ---
 
-# Repository Structure
+# Phase 4b – Attention Visualisation
 
-```
+This phase inspects how attention is distributed at the final token.
+
+Method:
+
+- Extract attention from `blocks.{layer}.attn.hook_pattern`
+- Slice final token → all source tokens
+- Average across heads for visualisation
+- Compare Cell A vs Cell C
+
+Layers analysed:
+
+20, 30, 31
+
+Initial findings:
+
+- Structured prompts distribute attention across relevant context
+- Direct prompts collapse attention locally
+- Differences are strongest in late layers
+
+---
+
 # Repository Structure
 
 dataset/
@@ -153,8 +213,11 @@ scripts/
   phase_3c_cross_condition/
     cross_condition_patching.py
 
-  phase_4_logit_lens/
+  phase_4a_logit_lens/
     logit_lens_analysis.py
+
+  phase_4b_attention_visualisation/
+    attention_heatmaps.py
 
   utils/
     verify_env.py
@@ -182,11 +245,20 @@ results/
   phase_3c_cross_condition/
     cross_condition_layer_comparison.csv
 
-  phase_4_logit_lens/
+  phase_4a_logit_lens/
     logit_lens_per_example_clean.csv
     logit_lens_per_example_noisy.csv
     logit_lens_summary_clean.csv
     logit_lens_summary_noisy.csv
+
+  phase_4b_attention_visualisation/
+    attention_manifest.json
+    geo_006_layer_20_comparison.json
+    geo_006_layer_30_comparison.json
+    geo_006_layer_31_comparison.json
+    geo_029_layer_20_comparison.json
+    geo_029_layer_30_comparison.json
+    geo_029_layer_31_comparison.json
 
 figures/
   phase_3a_layer_patching/
@@ -197,11 +269,19 @@ figures/
     component_patch_heatmap.png
     head_patch_heatmap.png
 
-  phase_4_logit_lens/
+  phase_4a_logit_lens/
     logit_lens_logit_clean.png
     logit_lens_logit_noisy.png
     logit_lens_top1_clean.png
     logit_lens_top1_noisy.png
+
+  phase_4b_attention_visualisation/
+    geo_006_layer_20_comparison.png
+    geo_006_layer_30_comparison.png
+    geo_006_layer_31_comparison.png
+    geo_029_layer_20_comparison.png
+    geo_029_layer_30_comparison.png
+    geo_029_layer_31_comparison.png
 
 setup/
   environment.yml
@@ -267,7 +347,6 @@ conda activate enhancing-reasoning-mi
 ---
 
 # Running the Experiment
-# Running the Experiment
 
 All scripts assume the current working directory is the repository root.
 
@@ -291,8 +370,8 @@ python scripts/phase_1_dataset/build_dataset.py
 
 Outputs:
 
-dataset/processed/dataset.json
-results/phase_1_dataset/dataset_alignment_report.csv
+dataset/processed/dataset.json  
+results/phase_1_dataset/dataset_alignment_report.csv  
 
 ---
 
@@ -304,9 +383,9 @@ python scripts/phase_2_behaviour/run_evaluation.py
 
 Outputs:
 
-results/phase_2_behaviour/evaluation_results.csv
-results/phase_2_behaviour/accuracy_summary.csv
-dataset/processed/contrast_examples.json
+results/phase_2_behaviour/evaluation_results.csv  
+results/phase_2_behaviour/accuracy_summary.csv  
+dataset/processed/contrast_examples.json  
 
 Identify noisy contrast examples:
 
@@ -314,7 +393,7 @@ python scripts/phase_2_behaviour/run_noisy_contrasts.py
 
 Outputs:
 
-dataset/processed/noisy_contrast_examples.json
+dataset/processed/noisy_contrast_examples.json  
 
 ---
 
@@ -326,30 +405,30 @@ python scripts/phase_3a_layer_patching/activation_patching.py
 
 Outputs:
 
-results/phase_3a_layer_patching/layer_patch_results.csv
-results/phase_3a_layer_patching/layer_patch_summary.csv
-figures/phase_3a_layer_patching/layer_patch_curve.png
+results/phase_3a_layer_patching/layer_patch_results.csv  
+results/phase_3a_layer_patching/layer_patch_summary.csv  
+figures/phase_3a_layer_patching/layer_patch_curve.png  
 
 ---
 
 ## Phase 3b — Component and Head Patching
 
-Decomposes layer mediation into attention and MLP components,
+Decomposes layer mediation into attention and MLP components,  
 then evaluates individual attention heads.
 
-python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31
+python scripts/phase_3b_component_patching/component_patching.py --layers 24 25 29 30 31  
 
-python scripts/phase_3b_component_patching/head_patching.py --layers 30 31
+python scripts/phase_3b_component_patching/head_patching.py --layers 30 31  
 
 Outputs:
 
-results/phase_3b_component_patching/component_patch_results.csv
-results/phase_3b_component_patching/component_patch_summary.csv
-results/phase_3b_component_patching/head_patch_results.csv
-results/phase_3b_component_patching/head_patch_summary.csv
+results/phase_3b_component_patching/component_patch_results.csv  
+results/phase_3b_component_patching/component_patch_summary.csv  
+results/phase_3b_component_patching/head_patch_results.csv  
+results/phase_3b_component_patching/head_patch_summary.csv  
 
-figures/phase_3b_component_patching/component_patch_heatmap.png
-figures/phase_3b_component_patching/head_patch_heatmap.png
+figures/phase_3b_component_patching/component_patch_heatmap.png  
+figures/phase_3b_component_patching/head_patch_heatmap.png  
 
 ---
 
@@ -357,25 +436,60 @@ figures/phase_3b_component_patching/head_patch_heatmap.png
 
 Compares clean and noisy reasoning circuits.
 
-python scripts/phase_3c_cross_condition/cross_condition_patching.py
+python scripts/phase_3c_cross_condition/cross_condition_patching.py  
 
 Outputs:
 
-results/phase_3a_layer_patching/noisy_layer_patch_results.csv
-results/phase_3a_layer_patching/noisy_layer_patch_summary.csv
-results/phase_3c_cross_condition/cross_condition_layer_comparison.csv
+results/phase_3a_layer_patching/noisy_layer_patch_results.csv  
+results/phase_3a_layer_patching/noisy_layer_patch_summary.csv  
+results/phase_3c_cross_condition/cross_condition_layer_comparison.csv  
 
-figures/phase_3a_layer_patching/clean_vs_noisy_layer_patch_overlay.png
+figures/phase_3a_layer_patching/clean_vs_noisy_layer_patch_overlay.png  
 
 ---
 
-## Phase 4 — Logit Lens Diagnostic
+## Phase 4a — Logit Lens Diagnostic
 
 Examines the emergence layer of the correct answer representation.
 
-python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
+python scripts/phase_4a_logit_lens/logit_lens_analysis.py --include-noisy  
+
+Outputs:
+
+results/phase_4a_logit_lens/logit_lens_per_example_clean.csv  
+results/phase_4a_logit_lens/logit_lens_per_example_noisy.csv  
+results/phase_4a_logit_lens/logit_lens_summary_clean.csv  
+results/phase_4a_logit_lens/logit_lens_summary_noisy.csv  
+
+figures/phase_4a_logit_lens/logit_lens_logit_clean.png  
+figures/phase_4a_logit_lens/logit_lens_logit_noisy.png  
+figures/phase_4a_logit_lens/logit_lens_top1_clean.png  
+figures/phase_4a_logit_lens/logit_lens_top1_noisy.png  
 
 ---
+
+## Phase 4b — Attention Visualisation
+
+Visualises final-token attention patterns to analyse information routing behaviour.
+
+python scripts/phase_4b_attention_visualisation/attention_heatmaps.py --num-examples 2 --layers 20 30 31  
+
+Outputs:
+
+figures/phase_4b_attention_visualisation/{example_id}_layer_{layer}_comparison.png  
+
+results/phase_4b_attention_visualisation/{example_id}_layer_{layer}_comparison.json  
+results/phase_4b_attention_visualisation/attention_manifest.json  
+
+Notes:
+
+- compares Cell A vs Cell C attention at the final token  
+- uses head-averaged attention for visualisation  
+- focuses on layers 20, 30, 31  
+- designed for qualitative inspection, not primary causal evidence  
+
+---
+
 
 # Model
 

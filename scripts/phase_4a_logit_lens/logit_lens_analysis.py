@@ -30,16 +30,16 @@ patching (Phases 3a–3c) provides the primary causal evidence.
 USAGE
 -----
   # Clean contrast only (default)
-  python scripts/phase_4_logit_lens/logit_lens_analysis.py
+  python scripts/phase_4a_logit_lens/logit_lens_analysis.py
 
   # Noisy contrast only
-  python scripts/phase_4_logit_lens/logit_lens_analysis.py --noisy
+  python scripts/phase_4a_logit_lens/logit_lens_analysis.py --noisy
 
   # Both in one run
-  python scripts/phase_4_logit_lens/logit_lens_analysis.py --include-noisy
+  python scripts/phase_4a_logit_lens/logit_lens_analysis.py --include-noisy
 
   # Custom paths (all args have sensible defaults — override only as needed)
-  python scripts/phase_4_logit_lens/logit_lens_analysis.py \
+  python scripts/phase_4a_logit_lens/logit_lens_analysis.py \
       --include-noisy --max-examples 30
 
 INPUT FILES
@@ -54,14 +54,14 @@ INPUT FILES
 
 OUTPUT FILES
 ------------
-  results/phase_4_logit_lens/logit_lens_per_example_clean.csv  — per-example, per-layer (clean)
-  results/phase_4_logit_lens/logit_lens_summary_clean.csv      — aggregated (clean)
-  results/phase_4_logit_lens/logit_lens_per_example_noisy.csv  — per-example, per-layer (noisy)
-  results/phase_4_logit_lens/logit_lens_summary_noisy.csv      — aggregated (noisy)
-  figures/phase_4_logit_lens/logit_lens_top1_clean.png          — top-1 rate vs layer (clean)
-  figures/phase_4_logit_lens/logit_lens_logit_clean.png         — mean gold logit vs layer (clean)
-  figures/phase_4_logit_lens/logit_lens_top1_noisy.png          — top-1 rate vs layer (noisy)
-  figures/phase_4_logit_lens/logit_lens_logit_noisy.png         — mean gold logit vs layer (noisy)
+  results/phase_4a_logit_lens/logit_lens_per_example_clean.csv  — per-example, per-layer (clean)
+  results/phase_4a_logit_lens/logit_lens_summary_clean.csv      — aggregated (clean)
+  results/phase_4a_logit_lens/logit_lens_per_example_noisy.csv  — per-example, per-layer (noisy)
+  results/phase_4a_logit_lens/logit_lens_summary_noisy.csv      — aggregated (noisy)
+  figures/phase_4a_logit_lens/logit_lens_top1_clean.png          — top-1 rate vs layer (clean)
+  figures/phase_4a_logit_lens/logit_lens_logit_clean.png         — mean gold logit vs layer (clean)
+  figures/phase_4a_logit_lens/logit_lens_top1_noisy.png          — top-1 rate vs layer (noisy)
+  figures/phase_4a_logit_lens/logit_lens_logit_noisy.png         — mean gold logit vs layer (noisy)
 
 Thesis terminology:
   direct prompt, structured prompt, filler control, contrast examples,
@@ -849,11 +849,11 @@ def main():
         help="Path to full dataset JSON (fallback for prompt lookup)"
     )
     parser.add_argument(
-        "--outdir", type=str, default="results/phase_4_logit_lens",
+        "--outdir", type=str, default="results/phase_4a_logit_lens",
         help="Output directory for CSV files"
     )
     parser.add_argument(
-        "--figdir", type=str, default="figures/phase_4_logit_lens",
+        "--figdir", type=str, default="figures/phase_4a_logit_lens",
         help="Output directory for figure PNG files"
     )
     parser.add_argument(
