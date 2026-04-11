@@ -65,14 +65,21 @@ results/*.tmp
 results/*.cache
 
 # =========================
-# Dataset drafts (keep final dataset)
-# =========================
-dataset/dataset_draft.json
-
-# =========================
 # Large files
 # =========================
 *.pt
 *.bin
 *.ckpt
 *.safetensors
+
+# =========================
+# Output files
+# =========================
+results/*/*.csv
+figures/*/*.png
+results/*/*.json
+results/*/*/*.json
+figures/*/*.png
+figures/*/*/*.png
+figures/*/*/*/*.png
+dataset/processed/*.json
