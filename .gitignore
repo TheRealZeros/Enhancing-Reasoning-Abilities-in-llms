@@ -75,11 +75,3 @@ results/*.cache
 # =========================
 # Output files
 # =========================
-results/*/*.csv
-figures/*/*.png
-results/*/*.json
-results/*/*/*.json
-figures/*/*.png
-figures/*/*/*.png
-figures/*/*/*/*.png
-dataset/processed/*.json
